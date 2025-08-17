@@ -1,0 +1,373 @@
+import React, { useState, useEffect } from 'react';
+import { QrCode, BarChart3, Settings, LogOut, User, Download } from 'lucide-react';
+import { Scanner } from './components/Scanner';
+import { DataTable } from './components/DataTable';
+import { DataVisualization } from './components/DataVisualization';
+import { ArduinoIntegration } from './components/ArduinoIntegration';
+import { AuthModal } from './components/AuthModal';
+import { QRCodeData } from './types';
+import { QRDatabaseService, AuthService } from './lib/supabase';
+
+type TabType = 'scan' | 'data' | 'analytics' | 'arduino';
+
+function App() {
+  const [activeTab, setActiveTab] = useState<TabType>('scan');
+  const [qrCodes, setQrCodes] = useState<QRCodeData[]>([]);
+  const [selectedQR, setSelectedQR] = useState<QRCodeData | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [scanSessionId, setScanSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkUser();
+    setupAuthListener();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadQRCodes();
+      startScanSession();
+    }
+  }, [user]);
+
+  const checkUser = async () => {
+    const currentUser = await AuthService.getCurrentUser();
+    setUser(currentUser);
+    setLoading(false);
+  };
+
+  const setupAuthListener = () => {
+    AuthService.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        loadQRCodes();
+      } else {
+        setQrCodes([]);
+      }
+    });
+  };
+
+  const loadQRCodes = async () => {
+    const codes = await QRDatabaseService.getUserQRCodes();
+    setQrCodes(codes);
+  };
+
+  const startScanSession = async () => {
+    const sessionId = await QRDatabaseService.startScanSession();
+    setScanSessionId(sessionId);
+  };
+
+  const handleScan = async (data: QRCodeData) => {
+    if (!user) return;
+
+    // Save to database
+    const savedQR = await QRDatabaseService.insertQRCode(data);
+    if (savedQR) {
+      setQrCodes(prev => [savedQR, ...prev]);
+      
+      // Update scan session
+      if (scanSessionId) {
+        await QRDatabaseService.updateScanSession(scanSessionId, {
+          total_scans: qrCodes.length + 1,
+          successful_scans: qrCodes.filter(qr => qr.validation_status === 'valid').length + (data.validation_status === 'valid' ? 1 : 0)
+        });
+      }
+    }
+  };
+
+  const handleScanError = (error: string) => {
+    console.error('Scan error:', error);
+    
+    // Update scan session with failed scan
+    if (scanSessionId) {
+      QRDatabaseService.updateScanSession(scanSessionId, {
+        failed_scans: 1
+      });
+    }
+  };
+
+  const handleDeleteQR = async (id: string) => {
+    if (await QRDatabaseService.deleteQRCode(id)) {
+      setQrCodes(prev => prev.filter(qr => qr.id !== id));
+    }
+  };
+
+  const handleExport = async () => {
+    const exportData = await QRDatabaseService.exportQRCodes();
+    if (exportData) {
+      const blob = new Blob([exportData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `qr_codes_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleArduinoSync = async (qrData: QRCodeData) => {
+    // Update local state optimistically
+    setQrCodes(prev => 
+      prev.map(qr => 
+        qr.id === qrData.id 
+          ? { ...qr, arduino_sync_status: 'pending' as const }
+          : qr
+      )
+    );
+
+    // Log the sync attempt
+    await QRDatabaseService.logArduinoSync(qrData.id, {
+      sync_status: 'pending',
+      arduino_thing_id: 'demo_thing'
+    });
+  };
+
+  const handleSyncComplete = async (results: Map<string, any>) => {
+    // Update sync statuses based on results
+    const updates = Array.from(results.entries()).map(async ([qrId, status]) => {
+      await QRDatabaseService.updateSyncStatus(qrId, status);
+      await QRDatabaseService.logArduinoSync(qrId, {
+        sync_status: status,
+        arduino_thing_id: 'demo_thing'
+      });
+    });
+
+    await Promise.all(updates);
+    await loadQRCodes(); // Refresh data
+  };
+
+  const handleSignOut = async () => {
+    // End current scan session
+    if (scanSessionId) {
+      await QRDatabaseService.updateScanSession(scanSessionId, {
+        end_time: new Date().toISOString()
+      });
+    }
+    
+    await AuthService.signOut();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <QrCode className="w-8 h-8 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">QR Management System</h1>
+            <p className="text-gray-600">
+              Comprehensive QR code scanning, data management, and Arduino Cloud integration
+            </p>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <QrCode className="w-5 h-5 text-blue-600" />
+              <span className="text-sm text-gray-700">Multi-format QR code scanning</span>
+            </div>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <BarChart3 className="w-5 h-5 text-green-600" />
+              <span className="text-sm text-gray-700">Advanced data analytics</span>
+            </div>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <Settings className="w-5 h-5 text-purple-600" />
+              <span className="text-sm text-gray-700">Arduino Cloud integration</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setAuthModalOpen(true)}
+            className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <User className="w-4 h-4" />
+            <span>Get Started</span>
+          </button>
+        </div>
+
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          onAuthSuccess={() => setAuthModalOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
+              <QrCode className="w-8 h-8 text-blue-600" />
+              <h1 className="text-xl font-semibold text-gray-900">QR Management System</h1>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Welcome, {user.email}
+              </span>
+              <button
+                onClick={handleExport}
+                className="flex items-center space-x-2 px-3 py-1.5 text-green-600 hover:text-green-800 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export</span>
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center space-x-2 px-3 py-1.5 text-red-600 hover:text-red-800 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            {[
+              { id: 'scan', label: 'Scan QR Codes', icon: QrCode },
+              { id: 'data', label: 'Manage Data', icon: User },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+              { id: 'arduino', label: 'Arduino Cloud', icon: Settings },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id as TabType)}
+                className={`flex items-center space-x-2 px-3 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'scan' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">QR Code Scanner</h2>
+              <Scanner onScan={handleScan} onError={handleScanError} />
+            </div>
+            
+            {qrCodes.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Scans</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {qrCodes.slice(0, 6).map((qr) => (
+                    <div key={qr.id} className="p-4 border border-gray-200 rounded-lg">
+                      <p className="text-sm font-medium text-gray-900 mb-2">
+                        {qr.data_type.toUpperCase()}
+                      </p>
+                      <p className="text-sm text-gray-600 truncate">
+                        {typeof qr.parsed_data === 'object'
+                          ? JSON.stringify(qr.parsed_data).substring(0, 50) + '...'
+                          : qr.raw_data.substring(0, 50) + '...'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {new Date(qr.scan_timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'data' && (
+          <DataTable
+            data={qrCodes}
+            onView={setSelectedQR}
+            onDelete={handleDeleteQR}
+            onExport={handleExport}
+            onSync={handleArduinoSync}
+          />
+        )}
+
+        {activeTab === 'analytics' && (
+          <DataVisualization data={qrCodes} />
+        )}
+
+        {activeTab === 'arduino' && (
+          <ArduinoIntegration 
+            qrData={qrCodes}
+            onSyncComplete={handleSyncComplete}
+          />
+        )}
+      </main>
+
+      {/* QR Detail Modal */}
+      {selectedQR && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-96 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">QR Code Details</h3>
+              <button
+                onClick={() => setSelectedQR(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedQR.data_type}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Raw Data</label>
+                <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-2 rounded break-all">
+                  {selectedQR.raw_data}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Parsed Data</label>
+                <pre className="mt-1 text-sm text-gray-900 bg-gray-50 p-2 rounded overflow-x-auto">
+                  {JSON.stringify(selectedQR.parsed_data, null, 2)}
+                </pre>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Validation</label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedQR.validation_status}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Dimensions</label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedQR.dimensions}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
