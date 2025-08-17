@@ -40,7 +40,7 @@ export class QRCodeParser {
       if (parsed && typeof parsed === 'object') {
         // Check for medicine tracking structure
         if (parsed.type === 'medicine_tracking' && parsed.data) {
-          return QRDataType.CUSTOM; // Use CUSTOM for medicine tracking
+          return QRDataType.MEDICINE_TRACKING;
         }
         
         // Check for multidimensional structure
@@ -123,8 +123,14 @@ export class QRCodeParser {
         return JSON.parse(data);
       case QRDataType.MULTIDIMENSIONAL:
         return this.parseMultidimensional(data);
-      case QRDataType.CUSTOM:
+      case QRDataType.MEDICINE_TRACKING:
         return this.parseMedicineTracking(data);
+      case QRDataType.CUSTOM:
+        try {
+          return JSON.parse(data);
+        } catch (e) {
+          return { text: data };
+        }
       default:
         return { text: data };
     }
@@ -331,13 +337,12 @@ export class QRCodeParser {
         return data.email ? ValidationStatus.VALID : ValidationStatus.INVALID;
       case QRDataType.MULTIDIMENSIONAL:
         return data.layers && data.layers.length > 0 ? ValidationStatus.VALID : ValidationStatus.INCOMPLETE;
-      case QRDataType.CUSTOM:
+      case QRDataType.MEDICINE_TRACKING:
         // For medicine tracking, validate essential fields
-        if (data.medicine_type === 'medicine_tracking') {
-          return (data.medicine_id && data.medicine_name && data.batch_number) 
-            ? ValidationStatus.VALID 
-            : ValidationStatus.INCOMPLETE;
-        }
+        return (data.medicine_id && data.medicine_name && data.batch_number) 
+          ? ValidationStatus.VALID 
+          : ValidationStatus.INCOMPLETE;
+      case QRDataType.CUSTOM:
         return ValidationStatus.VALID;
       default:
         return ValidationStatus.VALID;

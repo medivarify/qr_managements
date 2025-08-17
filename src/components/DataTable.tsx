@@ -73,6 +73,7 @@ export const DataTable: React.FC<DataTableProps> = ({
       json: 'bg-yellow-100 text-yellow-800',
       multidimensional: 'bg-pink-100 text-pink-800',
       custom: 'bg-orange-100 text-orange-800',
+      medicine_tracking: 'bg-emerald-100 text-emerald-800',
     };
 
     return (

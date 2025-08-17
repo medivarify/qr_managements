@@ -79,6 +79,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
     [QRDataType.JSON]: '#f59e0b',
     [QRDataType.MULTIDIMENSIONAL]: '#ec4899',
     [QRDataType.CUSTOM]: '#ef4444',
+    [QRDataType.MEDICINE_TRACKING]: '#10b981',
   };
 
   const maxTypeCount = Math.max(...Object.values(typeDistribution), 1);

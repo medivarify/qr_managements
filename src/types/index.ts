@@ -32,7 +32,8 @@ export enum QRDataType {
   JSON = 'json',
   XML = 'xml',
   MULTIDIMENSIONAL = 'multidimensional',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
+  MEDICINE_TRACKING = 'medicine_tracking'
 }
 
 export enum ValidationStatus {
