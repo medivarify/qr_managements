@@ -181,24 +181,24 @@ function App() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
               <QrCode className="w-8 h-8 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">QR Management System</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">MediVerify - Medicine Tracking</h1>
             <p className="text-gray-600">
-              Comprehensive QR code scanning, data management, and Arduino Cloud integration
+              Secure medicine tracking, verification, and authenticity management system
             </p>
           </div>
 
           <div className="space-y-4 mb-6">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <QrCode className="w-5 h-5 text-blue-600" />
-              <span className="text-sm text-gray-700">Multi-format QR code scanning</span>
+              <span className="text-sm text-gray-700">Medicine QR code scanning & verification</span>
             </div>
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <BarChart3 className="w-5 h-5 text-green-600" />
-              <span className="text-sm text-gray-700">Advanced data analytics</span>
+              <span className="text-sm text-gray-700">Medicine tracking analytics</span>
             </div>
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <Settings className="w-5 h-5 text-purple-600" />
-              <span className="text-sm text-gray-700">Arduino Cloud integration</span>
+              <span className="text-sm text-gray-700">Real-time medicine monitoring</span>
             </div>
           </div>
 
@@ -228,7 +228,7 @@ function App() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
               <QrCode className="w-8 h-8 text-blue-600" />
-              <h1 className="text-xl font-semibold text-gray-900">QR Management System</h1>
+              <h1 className="text-xl font-semibold text-gray-900">MediVerify - Medicine Tracking</h1>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -259,11 +259,11 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             {[
-              { id: 'scan', label: 'Scan QR Codes', icon: QrCode },
-              { id: 'generate', label: 'Generate QR Codes', icon: QrCode },
-              { id: 'data', label: 'Manage Data', icon: User },
-              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-              { id: 'arduino', label: 'Arduino Cloud', icon: Settings },
+              { id: 'scan', label: 'Scan Medicine', icon: QrCode },
+              { id: 'generate', label: 'Generate Medicine QR', icon: QrCode },
+              { id: 'data', label: 'Medicine Database', icon: User },
+              { id: 'analytics', label: 'Medicine Analytics', icon: BarChart3 },
+              { id: 'arduino', label: 'IoT Monitoring', icon: Settings },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -287,27 +287,33 @@ function App() {
         {activeTab === 'scan' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">QR Code Scanner</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Medicine QR Code Scanner</h2>
               <Scanner onScan={handleScan} onError={handleScanError} />
             </div>
             
             {qrCodes.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Scans</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Scanned Medicines</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {qrCodes.slice(0, 6).map((qr) => (
-                    <div key={qr.id} className="p-4 border border-gray-200 rounded-lg">
+                    <div key={qr.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                       <p className="text-sm font-medium text-gray-900 mb-2">
-                        {qr.data_type.toUpperCase()}
+                        {qr.parsed_data.medicine_name || qr.data_type.toUpperCase()}
                       </p>
                       <p className="text-sm text-gray-600 truncate">
-                        {typeof qr.parsed_data === 'object'
-                          ? JSON.stringify(qr.parsed_data).substring(0, 50) + '...'
-                          : qr.raw_data.substring(0, 50) + '...'}
+                        {qr.parsed_data.manufacturer || 'Unknown Manufacturer'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Batch: {qr.parsed_data.batch_number || 'N/A'}
                       </p>
                       <p className="text-xs text-gray-400 mt-2">
                         {new Date(qr.scan_timestamp).toLocaleString()}
                       </p>
+                      {qr.parsed_data.is_expired && (
+                        <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                          EXPIRED
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -317,7 +323,9 @@ function App() {
         )}
 
         {activeTab === 'generate' && (
-          <ProductQRGenerator />
+          <div>
+            <ProductQRGenerator />
+          </div>
         )}
 
         {activeTab === 'data' && (
@@ -347,7 +355,7 @@ function App() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-96 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">QR Code Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Medicine Details</h3>
               <button
                 onClick={() => setSelectedQR(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -356,31 +364,42 @@ function App() {
               </button>
             </div>
             <div className="space-y-4">
+              {selectedQR.parsed_data.medicine_name && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Medicine Name</label>
+                  <p className="mt-1 text-sm text-gray-900 font-semibold">{selectedQR.parsed_data.medicine_name}</p>
+                </div>
+              )}
+              {selectedQR.parsed_data.manufacturer && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Manufacturer</label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedQR.parsed_data.manufacturer}</p>
+                </div>
+              )}
+              {selectedQR.parsed_data.batch_number && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Batch Number</label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedQR.parsed_data.batch_number}</p>
+                </div>
+              )}
+              {selectedQR.parsed_data.expiry_date && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Expiry Date</label>
+                  <p className={`mt-1 text-sm ${selectedQR.parsed_data.is_expired ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                    {selectedQR.parsed_data.expiry_date}
+                    {selectedQR.parsed_data.is_expired && ' (EXPIRED)'}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Type</label>
                 <p className="mt-1 text-sm text-gray-900">{selectedQR.data_type}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Raw Data</label>
-                <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-2 rounded break-all">
-                  {selectedQR.raw_data}
-                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Parsed Data</label>
                 <pre className="mt-1 text-sm text-gray-900 bg-gray-50 p-2 rounded overflow-x-auto">
                   {JSON.stringify(selectedQR.parsed_data, null, 2)}
                 </pre>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Validation</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedQR.validation_status}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Dimensions</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedQR.dimensions}</p>
-                </div>
               </div>
             </div>
           </div>
