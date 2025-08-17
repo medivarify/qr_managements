@@ -34,6 +34,25 @@ export class QRCodeParser {
    * Detect the type of data contained in the QR code
    */
   private static detectDataType(data: string): QRDataType {
+    // Try to parse as JSON first to check for supply chain products
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed === 'object') {
+        // Check for supply chain product structure
+        if (parsed.type === 'supply_chain_product' && parsed.data) {
+          return QRDataType.CUSTOM; // Use CUSTOM for supply chain products
+        }
+        
+        // Check for multidimensional structure
+        if (parsed.layers && Array.isArray(parsed.layers)) {
+          return QRDataType.MULTIDIMENSIONAL;
+        }
+        return QRDataType.JSON;
+      }
+    } catch (e) {
+      // Not JSON, continue with other checks
+    }
+
     // URL detection
     if (/^https?:\/\//i.test(data)) {
       return QRDataType.URL;
@@ -74,20 +93,6 @@ export class QRCodeParser {
       return QRDataType.GEO;
     }
 
-    // JSON detection
-    try {
-      const parsed = JSON.parse(data);
-      if (parsed && typeof parsed === 'object') {
-        // Check for multidimensional structure
-        if (parsed.layers && Array.isArray(parsed.layers)) {
-          return QRDataType.MULTIDIMENSIONAL;
-        }
-        return QRDataType.JSON;
-      }
-    } catch (e) {
-      // Not JSON, continue checking
-    }
-
     // XML detection
     if (/<\?xml|<\w+.*?>/.test(data)) {
       return QRDataType.XML;
@@ -118,6 +123,8 @@ export class QRCodeParser {
         return JSON.parse(data);
       case QRDataType.MULTIDIMENSIONAL:
         return this.parseMultidimensional(data);
+      case QRDataType.CUSTOM:
+        return this.parseSupplyChainProduct(data);
       default:
         return { text: data };
     }
@@ -244,6 +251,39 @@ export class QRCodeParser {
   }
 
   /**
+   * Parse supply chain product QR codes
+   */
+  private static parseSupplyChainProduct(data: string): Record<string, any> {
+    try {
+      const parsed = JSON.parse(data);
+      
+      if (parsed.type === 'supply_chain_product' && parsed.data) {
+        return {
+          product_type: 'supply_chain_product',
+          scan_timestamp: new Date().toISOString(),
+          generated_timestamp: parsed.timestamp,
+          product_id: parsed.data.product_id,
+          product_name: parsed.data.product_name,
+          batch_number: parsed.data.batch_number,
+          manufacturing_date: parsed.data.manufacturing_date,
+          expiry_date: parsed.data.expiry_date,
+          manufacturer: parsed.data.manufacturer,
+          category: parsed.data.category,
+          description: parsed.data.description,
+          tracking_id: parsed.data.tracking_id,
+          supply_chain_data: parsed.data,
+          raw_product_data: parsed
+        };
+      }
+      
+      // Fallback to generic JSON parsing
+      return parsed;
+    } catch (e) {
+      return { error: 'Failed to parse supply chain product data', raw: data };
+    }
+  }
+
+  /**
    * Calculate the dimensionality of the parsed data
    */
   private static calculateDimensions(data: Record<string, any>): number {
@@ -282,6 +322,14 @@ export class QRCodeParser {
         return data.email ? ValidationStatus.VALID : ValidationStatus.INVALID;
       case QRDataType.MULTIDIMENSIONAL:
         return data.layers && data.layers.length > 0 ? ValidationStatus.VALID : ValidationStatus.INCOMPLETE;
+      case QRDataType.CUSTOM:
+        // For supply chain products, validate essential fields
+        if (data.product_type === 'supply_chain_product') {
+          return (data.product_id && data.product_name && data.batch_number) 
+            ? ValidationStatus.VALID 
+            : ValidationStatus.INCOMPLETE;
+        }
+        return ValidationStatus.VALID;
       default:
         return ValidationStatus.VALID;
     }
