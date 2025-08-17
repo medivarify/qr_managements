@@ -23,6 +23,8 @@ export class QRDatabaseService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      console.log('Inserting QR code:', qrData);
+      
       const { data, error } = await supabase
         .from('qr_codes')
         .insert([{
@@ -32,7 +34,12 @@ export class QRDatabaseService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database insert error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully inserted QR code:', data);
       return data;
     } catch (error) {
       console.error('Error inserting QR code:', error);

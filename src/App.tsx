@@ -50,8 +50,14 @@ function App() {
   };
 
   const loadQRCodes = async () => {
-    const codes = await QRDatabaseService.getUserQRCodes();
-    setQrCodes(codes);
+    try {
+      const codes = await QRDatabaseService.getUserQRCodes();
+      setQrCodes(codes);
+      console.log('Loaded QR codes from database:', codes.length);
+    } catch (error) {
+      console.error('Failed to load QR codes from database:', error);
+      // Keep existing local data if database fails
+    }
   };
 
   const startScanSession = async () => {
