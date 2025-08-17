@@ -18,40 +18,21 @@ export class ArduinoCloudService {
    */
   async authenticate(): Promise<boolean> {
     try {
-      const authUrl = `${this.config.baseUrl}/oauth/token`;
-      console.log('Attempting authentication to:', authUrl);
-      
-      // First, handle CORS preflight if needed
-      try {
-        await fetch(authUrl, {
-          method: 'OPTIONS',
-          headers: {
-            'Access-Control-Request-Method': 'POST',
-            'Access-Control-Request-Headers': 'Content-Type, Accept',
-          },
-        });
-      } catch (preflightError) {
-        console.log('Preflight request info:', preflightError);
-        // Continue with main request even if preflight fails
-      }
+      // Use Supabase edge function to avoid CORS issues
+      const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arduino-proxy/auth`;
+      console.log('Attempting authentication via proxy:', authUrl);
 
       const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'QR-Management-System/1.0',
-          'Origin': window.location.origin,
         },
-        body: new URLSearchParams({
-          grant_type: 'client_credentials',
+        body: JSON.stringify({
           client_id: this.config.clientId,
           client_secret: this.config.clientSecret,
-          audience: 'https://api2.arduino.cc/iot',
-          scope: 'iot:read iot:write'
         }),
-        mode: 'cors',
-        credentials: 'omit'
       });
 
       console.log('Authentication response status:', response.status);
@@ -80,9 +61,6 @@ export class ArduinoCloudService {
       return true;
     } catch (error) {
       console.error('Arduino Cloud authentication failed:', error);
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('CORS or Network error: Unable to connect to Arduino Cloud. This may be due to browser security restrictions or network issues.');
-      }
       throw error;
     }
   }
@@ -109,22 +87,27 @@ export class ArduinoCloudService {
       // Prepare data for Arduino Cloud format
       const cloudData = this.formatForArduino(qrData);
 
-      // Send to Arduino Cloud Thing property
-      const response = await fetch(
-        `${this.config.baseUrl}/iot/v2/things/${this.config.thingId}/properties/${this.config.propertyName}/publish`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(cloudData),
-        }
-      );
+      // Use Supabase edge function to sync data
+      const syncUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arduino-proxy/sync`;
+      const response = await fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_token: this.accessToken,
+          thing_id: this.config.thingId,
+          property_name: this.config.propertyName,
+          data: cloudData,
+        }),
+      });
 
-      if (response.ok) {
+      const result = await response.json();
+      
+      if (result.success) {
         return ArduinoSyncStatus.SYNCED;
-      } else if (response.status >= 500) {
+      } else if (result.status >= 500) {
         return ArduinoSyncStatus.FAILED;
       } else {
         return ArduinoSyncStatus.PARTIAL;
@@ -171,15 +154,19 @@ export class ArduinoCloudService {
         throw new Error('Authentication failed');
       }
 
-      const response = await fetch(
-        `${this.config.baseUrl}/iot/v2/things/${this.config.thingId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Use Supabase edge function to get thing status
+      const statusUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arduino-proxy/thing-status`;
+      const response = await fetch(statusUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_token: this.accessToken,
+          thing_id: this.config.thingId,
+        }),
+      });
 
       return await response.json();
     } catch (error) {

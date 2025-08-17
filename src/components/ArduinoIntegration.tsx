@@ -15,7 +15,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
   const [config, setConfig] = useState<ArduinoCloudConfig>({
     clientId: '',
     clientSecret: '',
-    baseUrl: process.env.NODE_ENV === 'development' ? '/api/arduino' : 'https://api.arduino.cc',
+    baseUrl: 'https://api2.arduino.cc', // Not used anymore, kept for compatibility
     thingId: '',
     propertyName: 'qr_data'
   });
