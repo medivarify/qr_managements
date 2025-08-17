@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Lock, Mail } from 'lucide-react';
-import { AuthService } from '../lib/supabase';
+import { AuthService } from '../lib/localStorage';
 
 interface AuthModalProps {
   isOpen: boolean;

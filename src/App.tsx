@@ -7,7 +7,7 @@ import { ArduinoIntegration } from './components/ArduinoIntegration';
 import { AuthModal } from './components/AuthModal';
 import { ProductQRGenerator } from './components/ProductQRGenerator';
 import { QRCodeData } from './types';
-import { QRDatabaseService, AuthService } from './lib/supabase';
+import { QRDatabaseService, AuthService } from './lib/localStorage';
 
 type TabType = 'scan' | 'generate' | 'data' | 'analytics' | 'arduino';
 
