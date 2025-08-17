@@ -10,7 +10,7 @@ export default defineConfig({
         target: 'https://api.arduino.cc',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/arduino/, ''),
-        secure: true,
+        secure: false,
         headers: {
           'Origin': 'https://api.arduino.cc'
         }
