@@ -2,27 +2,37 @@ import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Package, Download, RefreshCw, Copy, Check } from 'lucide-react';
 
-interface ProductData {
-  product_id: string;
-  product_name: string;
+interface MedicineData {
+  medicine_id: string;
+  medicine_name: string;
   batch_number: string;
   manufacturing_date: string;
   expiry_date: string;
   manufacturer: string;
-  category: string;
-  description: string;
+  dosage_form: string;
+  strength: string;
+  active_ingredient: string;
+  ndc_number: string;
+  lot_number: string;
+  storage_conditions: string;
+  prescription_required: boolean;
 }
 
 export const ProductQRGenerator: React.FC = () => {
-  const [productData, setProductData] = useState<ProductData>({
-    product_id: '',
-    product_name: '',
+  const [medicineData, setMedicineData] = useState<MedicineData>({
+    medicine_id: '',
+    medicine_name: '',
     batch_number: '',
     manufacturing_date: '',
     expiry_date: '',
     manufacturer: '',
-    category: '',
-    description: ''
+    dosage_form: '',
+    strength: '',
+    active_ingredient: '',
+    ndc_number: '',
+    lot_number: '',
+    storage_conditions: '',
+    prescription_required: false
   });
 
   const [qrSize, setQrSize] = useState(256);
@@ -30,25 +40,26 @@ export const ProductQRGenerator: React.FC = () => {
 
   const generateQRData = (): string => {
     const qrData = {
-      type: 'supply_chain_product',
+      type: 'medicine_tracking',
       timestamp: new Date().toISOString(),
       data: {
-        ...productData,
-        tracking_id: `${productData.product_id}-${Date.now()}`
+        ...medicineData,
+        tracking_id: `${medicineData.medicine_id}-${Date.now()}`,
+        verification_code: Math.random().toString(36).substr(2, 8).toUpperCase()
       }
     };
     return JSON.stringify(qrData);
   };
 
-  const handleInputChange = (field: keyof ProductData, value: string) => {
-    setProductData(prev => ({
+  const handleInputChange = (field: keyof MedicineData, value: string | boolean) => {
+    setMedicineData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
   const downloadQRCode = () => {
-    const svg = document.getElementById('product-qr-code');
+    const svg = document.getElementById('medicine-qr-code');
     if (!svg) return;
 
     const svgData = new XMLSerializer().serializeToString(svg);
@@ -66,7 +77,7 @@ export const ProductQRGenerator: React.FC = () => {
         ctx.drawImage(img, 0, 0);
         
         const link = document.createElement('a');
-        link.download = `${productData.product_id || 'product'}-qr-code.png`;
+        link.download = `${medicineData.medicine_id || 'medicine'}-qr-code.png`;
         link.href = canvas.toDataURL();
         link.click();
       }
@@ -85,32 +96,43 @@ export const ProductQRGenerator: React.FC = () => {
     }
   };
 
-  const generateRandomProduct = () => {
-    const categories = ['Electronics', 'Food', 'Pharmaceutical', 'Automotive', 'Textile'];
-    const manufacturers = ['TechCorp', 'FoodCo', 'PharmaInc', 'AutoParts Ltd', 'TextilePro'];
+  const generateRandomMedicine = () => {
+    const dosageForms = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream', 'Drops'];
+    const manufacturers = ['Pfizer Inc', 'Johnson & Johnson', 'Novartis AG', 'Roche Holding', 'Merck & Co'];
+    const medicines = ['Amoxicillin', 'Ibuprofen', 'Metformin', 'Lisinopril', 'Atorvastatin'];
+    const strengths = ['250mg', '500mg', '10mg', '20mg', '100mg'];
     
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    const randomDosageForm = dosageForms[Math.floor(Math.random() * dosageForms.length)];
     const randomManufacturer = manufacturers[Math.floor(Math.random() * manufacturers.length)];
-    const productId = `PRD-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    const randomMedicine = medicines[Math.floor(Math.random() * medicines.length)];
+    const randomStrength = strengths[Math.floor(Math.random() * strengths.length)];
+    const medicineId = `MED-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
     const batchNumber = `BATCH-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const lotNumber = `LOT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const ndcNumber = `${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}-${Math.floor(Math.random() * 99).toString().padStart(2, '0')}`;
     
     const today = new Date();
     const manufacturingDate = today.toISOString().split('T')[0];
-    const expiryDate = new Date(today.getTime() + (365 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const expiryDate = new Date(today.getTime() + (730 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // 2 years
 
-    setProductData({
-      product_id: productId,
-      product_name: `Sample ${randomCategory} Product`,
+    setMedicineData({
+      medicine_id: medicineId,
+      medicine_name: randomMedicine,
       batch_number: batchNumber,
       manufacturing_date: manufacturingDate,
       expiry_date: expiryDate,
       manufacturer: randomManufacturer,
-      category: randomCategory,
-      description: `High-quality ${randomCategory.toLowerCase()} product for supply chain tracking demo`
+      dosage_form: randomDosageForm,
+      strength: randomStrength,
+      active_ingredient: randomMedicine,
+      ndc_number: ndcNumber,
+      lot_number: lotNumber,
+      storage_conditions: 'Store at room temperature (20-25°C)',
+      prescription_required: Math.random() > 0.5
     });
   };
 
-  const isFormValid = productData.product_id && productData.product_name && productData.batch_number;
+  const isFormValid = medicineData.medicine_id && medicineData.medicine_name && medicineData.batch_number;
 
   return (
     <div className="bg-white rounded-lg shadow-md">
@@ -119,12 +141,12 @@ export const ProductQRGenerator: React.FC = () => {
           <div className="flex items-center space-x-3">
             <Package className="w-6 h-6 text-blue-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Product QR Code Generator</h2>
-              <p className="text-sm text-gray-600">Generate QR codes for supply chain tracking</p>
+              <h2 className="text-xl font-semibold text-gray-900">Medicine QR Code Generator</h2>
+              <p className="text-sm text-gray-600">Generate QR codes for medicine tracking and verification</p>
             </div>
           </div>
           <button
-            onClick={generateRandomProduct}
+            onClick={generateRandomMedicine}
             className="flex items-center space-x-2 px-4 py-2 text-blue-600 hover:text-blue-800 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
@@ -135,34 +157,34 @@ export const ProductQRGenerator: React.FC = () => {
 
       <div className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Information Form */}
+          {/* Medicine Information Form */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Product Information</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Medicine Information</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product ID *
+                  Medicine ID *
                 </label>
                 <input
                   type="text"
-                  value={productData.product_id}
-                  onChange={(e) => handleInputChange('product_id', e.target.value)}
+                  value={medicineData.medicine_id}
+                  onChange={(e) => handleInputChange('medicine_id', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., PRD-ABC123"
+                  placeholder="e.g., MED-ABC123"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Name *
+                  Medicine Name *
                 </label>
                 <input
                   type="text"
-                  value={productData.product_name}
-                  onChange={(e) => handleInputChange('product_name', e.target.value)}
+                  value={medicineData.medicine_name}
+                  onChange={(e) => handleInputChange('medicine_name', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Wireless Headphones"
+                  placeholder="e.g., Amoxicillin"
                 />
               </div>
             </div>
@@ -174,7 +196,7 @@ export const ProductQRGenerator: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={productData.batch_number}
+                  value={medicineData.batch_number}
                   onChange={(e) => handleInputChange('batch_number', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., BATCH-2024001"
@@ -183,21 +205,79 @@ export const ProductQRGenerator: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
+                  Dosage Form
                 </label>
                 <select
-                  value={productData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  value={medicineData.dosage_form}
+                  onChange={(e) => handleInputChange('dosage_form', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Select Category</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Food">Food</option>
-                  <option value="Pharmaceutical">Pharmaceutical</option>
-                  <option value="Automotive">Automotive</option>
-                  <option value="Textile">Textile</option>
-                  <option value="Other">Other</option>
+                  <option value="">Select Dosage Form</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Capsule">Capsule</option>
+                  <option value="Syrup">Syrup</option>
+                  <option value="Injection">Injection</option>
+                  <option value="Cream">Cream</option>
+                  <option value="Drops">Drops</option>
+                  <option value="Inhaler">Inhaler</option>
+                  <option value="Patch">Patch</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Strength
+                </label>
+                <input
+                  type="text"
+                  value={medicineData.strength}
+                  onChange={(e) => handleInputChange('strength', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 500mg, 10ml"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Active Ingredient
+                </label>
+                <input
+                  type="text"
+                  value={medicineData.active_ingredient}
+                  onChange={(e) => handleInputChange('active_ingredient', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Amoxicillin trihydrate"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  NDC Number
+                </label>
+                <input
+                  type="text"
+                  value={medicineData.ndc_number}
+                  onChange={(e) => handleInputChange('ndc_number', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 12345-678-90"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lot Number
+                </label>
+                <input
+                  type="text"
+                  value={medicineData.lot_number}
+                  onChange={(e) => handleInputChange('lot_number', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., LOT-ABC123"
+                />
               </div>
             </div>
 
@@ -208,7 +288,7 @@ export const ProductQRGenerator: React.FC = () => {
                 </label>
                 <input
                   type="date"
-                  value={productData.manufacturing_date}
+                  value={medicineData.manufacturing_date}
                   onChange={(e) => handleInputChange('manufacturing_date', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -220,7 +300,7 @@ export const ProductQRGenerator: React.FC = () => {
                 </label>
                 <input
                   type="date"
-                  value={productData.expiry_date}
+                  value={medicineData.expiry_date}
                   onChange={(e) => handleInputChange('expiry_date', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -233,24 +313,37 @@ export const ProductQRGenerator: React.FC = () => {
               </label>
               <input
                 type="text"
-                value={productData.manufacturer}
+                value={medicineData.manufacturer}
                 onChange={(e) => handleInputChange('manufacturer', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., TechCorp Inc."
+                placeholder="e.g., Pfizer Inc."
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                Storage Conditions
               </label>
-              <textarea
-                value={productData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                rows={3}
+              <input
+                type="text"
+                value={medicineData.storage_conditions}
+                onChange={(e) => handleInputChange('storage_conditions', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Product description and additional details..."
+                placeholder="e.g., Store at room temperature (20-25°C)"
               />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="prescription_required"
+                checked={medicineData.prescription_required}
+                onChange={(e) => handleInputChange('prescription_required', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="prescription_required" className="ml-2 block text-sm text-gray-700">
+                Prescription Required
+              </label>
             </div>
           </div>
 
@@ -262,7 +355,7 @@ export const ProductQRGenerator: React.FC = () => {
               {isFormValid ? (
                 <div className="text-center">
                   <QRCodeSVG
-                    id="product-qr-code"
+                    id="medicine-qr-code"
                     value={generateQRData()}
                     size={qrSize}
                     level="M"
@@ -270,14 +363,14 @@ export const ProductQRGenerator: React.FC = () => {
                     className="mx-auto mb-4"
                   />
                   <p className="text-sm text-gray-600">
-                    QR Code for {productData.product_name}
+                    QR Code for {medicineData.medicine_name}
                   </p>
                 </div>
               ) : (
                 <div className="text-center text-gray-500">
                   <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p>Fill in required fields to generate QR code</p>
-                  <p className="text-sm mt-1">Product ID, Name, and Batch Number are required</p>
+                  <p className="text-sm mt-1">Medicine ID, Name, and Batch Number are required</p>
                 </div>
               )}
             </div>
@@ -321,8 +414,8 @@ export const ProductQRGenerator: React.FC = () => {
                   <p className="text-sm text-blue-800">
                     <strong>Next Steps:</strong><br/>
                     1. Download and print the QR code<br/>
-                    2. Attach it to your product<br/>
-                    3. Use the scanner to track the product<br/>
+                    2. Attach it to your medicine package<br/>
+                    3. Use the scanner to track and verify the medicine<br/>
                     4. Data will sync to Arduino Cloud automatically
                   </p>
                 </div>

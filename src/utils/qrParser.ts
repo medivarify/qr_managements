@@ -38,9 +38,9 @@ export class QRCodeParser {
     try {
       const parsed = JSON.parse(data);
       if (parsed && typeof parsed === 'object') {
-        // Check for supply chain product structure
-        if (parsed.type === 'supply_chain_product' && parsed.data) {
-          return QRDataType.CUSTOM; // Use CUSTOM for supply chain products
+        // Check for medicine tracking structure
+        if (parsed.type === 'medicine_tracking' && parsed.data) {
+          return QRDataType.CUSTOM; // Use CUSTOM for medicine tracking
         }
         
         // Check for multidimensional structure
@@ -124,7 +124,7 @@ export class QRCodeParser {
       case QRDataType.MULTIDIMENSIONAL:
         return this.parseMultidimensional(data);
       case QRDataType.CUSTOM:
-        return this.parseSupplyChainProduct(data);
+        return this.parseMedicineTracking(data);
       default:
         return { text: data };
     }
@@ -251,35 +251,44 @@ export class QRCodeParser {
   }
 
   /**
-   * Parse supply chain product QR codes
+   * Parse medicine tracking QR codes
    */
-  private static parseSupplyChainProduct(data: string): Record<string, any> {
+  private static parseMedicineTracking(data: string): Record<string, any> {
     try {
       const parsed = JSON.parse(data);
       
-      if (parsed.type === 'supply_chain_product' && parsed.data) {
+      if (parsed.type === 'medicine_tracking' && parsed.data) {
         return {
-          product_type: 'supply_chain_product',
+          medicine_type: 'medicine_tracking',
           scan_timestamp: new Date().toISOString(),
           generated_timestamp: parsed.timestamp,
-          product_id: parsed.data.product_id,
-          product_name: parsed.data.product_name,
+          medicine_id: parsed.data.medicine_id,
+          medicine_name: parsed.data.medicine_name,
           batch_number: parsed.data.batch_number,
           manufacturing_date: parsed.data.manufacturing_date,
           expiry_date: parsed.data.expiry_date,
           manufacturer: parsed.data.manufacturer,
-          category: parsed.data.category,
-          description: parsed.data.description,
+          dosage_form: parsed.data.dosage_form,
+          strength: parsed.data.strength,
+          active_ingredient: parsed.data.active_ingredient,
+          ndc_number: parsed.data.ndc_number,
+          lot_number: parsed.data.lot_number,
+          storage_conditions: parsed.data.storage_conditions,
+          prescription_required: parsed.data.prescription_required,
           tracking_id: parsed.data.tracking_id,
-          supply_chain_data: parsed.data,
-          raw_product_data: parsed
+          verification_code: parsed.data.verification_code,
+          medicine_data: parsed.data,
+          raw_medicine_data: parsed,
+          // Calculate expiry status
+          is_expired: new Date(parsed.data.expiry_date) < new Date(),
+          days_until_expiry: Math.ceil((new Date(parsed.data.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
         };
       }
       
       // Fallback to generic JSON parsing
       return parsed;
     } catch (e) {
-      return { error: 'Failed to parse supply chain product data', raw: data };
+      return { error: 'Failed to parse medicine tracking data', raw: data };
     }
   }
 
@@ -323,9 +332,9 @@ export class QRCodeParser {
       case QRDataType.MULTIDIMENSIONAL:
         return data.layers && data.layers.length > 0 ? ValidationStatus.VALID : ValidationStatus.INCOMPLETE;
       case QRDataType.CUSTOM:
-        // For supply chain products, validate essential fields
-        if (data.product_type === 'supply_chain_product') {
-          return (data.product_id && data.product_name && data.batch_number) 
+        // For medicine tracking, validate essential fields
+        if (data.medicine_type === 'medicine_tracking') {
+          return (data.medicine_id && data.medicine_name && data.batch_number) 
             ? ValidationStatus.VALID 
             : ValidationStatus.INCOMPLETE;
         }
