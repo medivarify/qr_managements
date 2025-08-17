@@ -1,5 +1,7 @@
+import jsQR from 'jsqr';
+
 /**
- * QR Code Scanner utility with camera integration and error handling
+ * QR Code Scanner utility with camera integration and real QR detection
  */
 export class QRScanner {
   private video: HTMLVideoElement | null = null;
@@ -9,6 +11,7 @@ export class QRScanner {
   private scanning: boolean = false;
   private onScanCallback: ((data: string) => void) | null = null;
   private onErrorCallback: ((error: string) => void) | null = null;
+  private animationFrame: number | null = null;
 
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -28,30 +31,54 @@ export class QRScanner {
     this.onErrorCallback = onError;
 
     try {
-      // Request camera access
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      // Request camera access with better constraints
+      const constraints = {
         video: {
-          facingMode: 'environment', // Use back camera if available
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          facingMode: { ideal: 'environment' }, // Prefer back camera
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          frameRate: { ideal: 30, min: 15 }
         }
-      });
+      };
 
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.video.srcObject = this.stream;
       this.video.setAttribute('playsinline', 'true');
+      this.video.setAttribute('muted', 'true');
       
-      await new Promise<void>((resolve) => {
+      // Wait for video to be ready
+      await new Promise<void>((resolve, reject) => {
         this.video!.onloadedmetadata = () => {
-          this.video!.play();
-          resolve();
+          this.video!.play()
+            .then(() => resolve())
+            .catch(reject);
         };
+        this.video!.onerror = () => reject(new Error('Video loading failed'));
+        
+        // Timeout after 10 seconds
+        setTimeout(() => reject(new Error('Camera initialization timeout')), 10000);
       });
 
       this.scanning = true;
       this.scanLoop();
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Camera access failed';
+      let errorMessage = 'Camera access failed';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'Camera permission denied. Please allow camera access and try again.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'No camera found. Please connect a camera and try again.';
+        } else if (error.name === 'NotReadableError') {
+          errorMessage = 'Camera is already in use by another application.';
+        } else if (error.name === 'OverconstrainedError') {
+          errorMessage = 'Camera does not meet the required specifications.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       this.onErrorCallback?.(errorMessage);
     }
   }
@@ -62,66 +89,65 @@ export class QRScanner {
   stopScanning(): void {
     this.scanning = false;
     
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+    
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      this.stream.getTracks().forEach(track => {
+        track.stop();
+      });
       this.stream = null;
     }
 
     if (this.video) {
       this.video.srcObject = null;
+      this.video.pause();
     }
   }
 
   /**
-   * Continuous scanning loop
+   * Continuous scanning loop with real QR detection
    */
   private scanLoop(): void {
     if (!this.scanning || !this.video || !this.canvas || !this.context) {
       return;
     }
 
-    // Set canvas size to match video
-    this.canvas.width = this.video.videoWidth;
-    this.canvas.height = this.video.videoHeight;
+    // Only scan if video is playing and has dimensions
+    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA && 
+        this.video.videoWidth > 0 && this.video.videoHeight > 0) {
+      
+      // Set canvas size to match video
+      this.canvas.width = this.video.videoWidth;
+      this.canvas.height = this.video.videoHeight;
 
-    // Draw current video frame to canvas
-    this.context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+      // Draw current video frame to canvas
+      this.context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
 
-    // Get image data for QR code detection
-    const imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
-    
-    try {
-      const qrResult = this.detectQRCode(imageData);
-      if (qrResult) {
-        this.onScanCallback?.(qrResult);
-        return; // Stop scanning after successful detection
+      // Get image data for QR code detection
+      const imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      
+      try {
+        // Use jsQR library for actual QR code detection
+        const qrResult = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+        
+        if (qrResult && qrResult.data) {
+          console.log('QR Code detected:', qrResult.data);
+          this.onScanCallback?.(qrResult.data);
+          return; // Stop scanning after successful detection
+        }
+      } catch (error) {
+        console.warn('QR detection error:', error);
+        // Continue scanning on detection errors
       }
-    } catch (error) {
-      // Continue scanning on detection errors
     }
 
     // Continue scanning
-    requestAnimationFrame(() => this.scanLoop());
-  }
-
-  /**
-   * Detect QR code in image data
-   * This is a simplified implementation - in production, use a library like jsQR
-   */
-  private detectQRCode(imageData: ImageData): string | null {
-    // In a real implementation, you would use a QR code detection library
-    // For this demo, we'll use a mock implementation
-    
-    // Mock QR code detection - replace with actual QR detection library
-    if (Math.random() > 0.95) { // Simulate occasional detection
-      return JSON.stringify({
-        type: 'demo',
-        timestamp: new Date().toISOString(),
-        data: 'Sample QR code data'
-      });
-    }
-    
-    return null;
+    this.animationFrame = requestAnimationFrame(() => this.scanLoop());
   }
 
   /**
@@ -129,6 +155,10 @@ export class QRScanner {
    */
   takeSnapshot(): string | null {
     if (!this.video || !this.canvas || !this.context) {
+      return null;
+    }
+
+    if (this.video.readyState !== this.video.HAVE_ENOUGH_DATA) {
       return null;
     }
 
@@ -144,17 +174,52 @@ export class QRScanner {
    */
   static async checkCameraPermissions(): Promise<boolean> {
     try {
-      const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName });
-      return permissions.state === 'granted';
-    } catch (error) {
-      // Fallback: try to access camera
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return false;
+      }
+
+      // Try to check permissions API
+      if ('permissions' in navigator) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          if (permission.state === 'granted') {
+            return true;
+          } else if (permission.state === 'denied') {
+            return false;
+          }
+          // If 'prompt', we'll try to access camera below
+        } catch (e) {
+          // Permissions API might not support camera, continue with fallback
+        }
+      }
+
+      // Fallback: try to access camera briefly
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 1, height: 1 } 
+        });
         stream.getTracks().forEach(track => track.stop());
         return true;
       } catch (e) {
         return false;
       }
+    } catch (error) {
+      console.error('Error checking camera permissions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get available cameras
+   */
+  static async getAvailableCameras(): Promise<MediaDeviceInfo[]> {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      return devices.filter(device => device.kind === 'videoinput');
+    } catch (error) {
+      console.error('Error getting available cameras:', error);
+      return [];
     }
   }
 }

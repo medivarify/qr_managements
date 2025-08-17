@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Camera, Square, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { Camera, Square, Zap, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react';
 import { QRScanner } from '../utils/qrScanner';
 import { QRCodeParser } from '../utils/qrParser';
 import { QRCodeData } from '../types';
@@ -15,9 +15,13 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [lastScannedData, setLastScannedData] = useState<string>('');
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<string>('');
 
   useEffect(() => {
     checkCameraPermission();
+    getAvailableCameras();
     return () => {
       stopScanning();
     };
@@ -28,6 +32,20 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
     setHasPermission(permission);
   };
 
+  const getAvailableCameras = async () => {
+    const cameras = await QRScanner.getAvailableCameras();
+    setAvailableCameras(cameras);
+    if (cameras.length > 0 && !selectedCamera) {
+      // Prefer back camera if available
+      const backCamera = cameras.find(camera => 
+        camera.label.toLowerCase().includes('back') || 
+        camera.label.toLowerCase().includes('rear') ||
+        camera.label.toLowerCase().includes('environment')
+      );
+      setSelectedCamera(backCamera?.deviceId || cameras[0].deviceId);
+    }
+  };
+
   const startScanning = async () => {
     if (!videoRef.current) return;
 
@@ -35,6 +53,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       scannerRef.current = new QRScanner();
       setScanStatus('scanning');
       setIsScanning(true);
+      setLastScannedData('');
 
       await scannerRef.current.startScanning(
         videoRef.current,
@@ -56,6 +75,13 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
   };
 
   const handleScanSuccess = (rawData: string) => {
+    // Prevent duplicate scans of the same data
+    if (rawData === lastScannedData) {
+      return;
+    }
+    
+    setLastScannedData(rawData);
+    
     try {
       const parsedQR = QRCodeParser.parseQRCode(rawData);
       const qrData: QRCodeData = {
@@ -81,7 +107,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
     setScanStatus('error');
     onError(error);
     setTimeout(() => {
-      setScanStatus('scanning');
+      if (isScanning) {
+        setScanStatus('scanning');
+      }
     }, 3000);
   };
 
@@ -89,9 +117,29 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
     if (scannerRef.current) {
       const snapshot = scannerRef.current.takeSnapshot();
       if (snapshot) {
-        // Handle snapshot - could save or process further
-        console.log('Snapshot taken:', snapshot.substring(0, 50) + '...');
+        // Create download link for snapshot
+        const link = document.createElement('a');
+        link.href = snapshot;
+        link.download = `qr-scan-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
+    }
+  };
+
+  const switchCamera = async () => {
+    if (availableCameras.length <= 1) return;
+    
+    const currentIndex = availableCameras.findIndex(camera => camera.deviceId === selectedCamera);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    setSelectedCamera(availableCameras[nextIndex].deviceId);
+    
+    if (isScanning) {
+      stopScanning();
+      setTimeout(() => {
+        startScanning();
+      }, 500);
     }
   };
 
@@ -118,7 +166,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       <div className="relative bg-black rounded-lg overflow-hidden">
         <video
           ref={videoRef}
-          className="w-full h-64 md:h-96 object-cover"
+          className="w-full h-64 md:h-96 object-cover rounded-lg"
           autoPlay
           playsInline
           muted
@@ -129,10 +177,16 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
           <div className="relative">
             <Square 
               className={`w-48 h-48 text-white transition-all duration-300 ${
-                scanStatus === 'scanning' ? 'animate-pulse' : ''
+                scanStatus === 'scanning' ? 'animate-pulse opacity-80' : 'opacity-60'
               }`} 
               strokeWidth={2}
             />
+            
+            {/* Corner indicators */}
+            <div className="absolute -top-2 -left-2 w-8 h-8 border-l-4 border-t-4 border-white"></div>
+            <div className="absolute -top-2 -right-2 w-8 h-8 border-r-4 border-t-4 border-white"></div>
+            <div className="absolute -bottom-2 -left-2 w-8 h-8 border-l-4 border-b-4 border-white"></div>
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 border-r-4 border-b-4 border-white"></div>
             
             {/* Status indicator */}
             <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
@@ -160,7 +214,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       </div>
 
       {/* Controls */}
-      <div className="flex justify-center space-x-4 mt-4">
+      <div className="flex flex-wrap justify-center gap-3 mt-4">
         <button
           onClick={isScanning ? stopScanning : startScanning}
           disabled={hasPermission === null}
@@ -175,22 +229,48 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
         </button>
 
         {isScanning && (
-          <button
-            onClick={takeSnapshot}
-            className="flex items-center space-x-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            <span>Snapshot</span>
-          </button>
+          <>
+            <button
+              onClick={takeSnapshot}
+              className="flex items-center space-x-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Snapshot</span>
+            </button>
+            
+            {availableCameras.length > 1 && (
+              <button
+                onClick={switchCamera}
+                className="flex items-center space-x-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Switch Camera</span>
+              </button>
+            )}
+          </>
         )}
       </div>
 
       {/* Instructions */}
       <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-sm text-blue-800 text-center">
-          Position the QR code within the square frame. The scanner will automatically detect and process the code.
-        </p>
+        <div className="text-sm text-blue-800">
+          <p className="text-center font-medium mb-2">How to scan QR codes:</p>
+          <ul className="space-y-1 text-left">
+            <li>• Position the QR code within the square frame</li>
+            <li>• Hold your device steady and ensure good lighting</li>
+            <li>• The scanner will automatically detect and process the code</li>
+            <li>• Make sure the QR code is clearly visible and not blurry</li>
+          </ul>
+        </div>
       </div>
+      
+      {/* Camera info */}
+      {availableCameras.length > 0 && (
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          Using: {availableCameras.find(c => c.deviceId === selectedCamera)?.label || 'Default camera'}
+          {availableCameras.length > 1 && ` (${availableCameras.length} cameras available)`}
+        </div>
+      )}
     </div>
   );
 };
