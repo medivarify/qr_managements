@@ -15,7 +15,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
   const [config, setConfig] = useState<ArduinoCloudConfig>({
     clientId: '',
     clientSecret: '',
-    baseUrl: '/api/arduino',
+    baseUrl: process.env.NODE_ENV === 'development' ? '/api/arduino' : 'https://api.arduino.cc',
     thingId: '',
     propertyName: 'qr_data'
   });
@@ -270,6 +270,16 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
             </h3>
             
             <div className="space-y-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Setup Instructions:</strong><br/>
+                  1. Go to <a href="https://cloud.arduino.cc/" target="_blank" rel="noopener noreferrer" className="underline">Arduino Cloud</a><br/>
+                  2. Navigate to API Keys section<br/>
+                  3. Create a new API key with <strong>iot:read</strong> and <strong>iot:write</strong> scopes<br/>
+                  4. Copy the Client ID and Client Secret here
+                </p>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Client ID
@@ -279,7 +289,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   value={config.clientId}
                   onChange={(e) => setConfig(prev => ({ ...prev, clientId: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Your Arduino Cloud Client ID"
+                  placeholder="e.g., AbCdEfGhIjKlMnOpQrStUvWxYz123456"
                 />
               </div>
               
@@ -292,7 +302,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   value={config.clientSecret}
                   onChange={(e) => setConfig(prev => ({ ...prev, clientSecret: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Your Arduino Cloud Client Secret"
+                  placeholder="Your secret key (keep this secure)"
                 />
               </div>
               
@@ -305,8 +315,11 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   value={config.thingId}
                   onChange={(e) => setConfig(prev => ({ ...prev, thingId: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Arduino Thing ID"
+                  placeholder="e.g., 12345678-1234-1234-1234-123456789abc"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Find this in your Arduino Cloud Things section
+                </p>
               </div>
               
               <div>

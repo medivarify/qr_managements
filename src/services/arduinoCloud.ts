@@ -21,18 +21,37 @@ export class ArduinoCloudService {
       const authUrl = `${this.config.baseUrl}/oauth/token`;
       console.log('Attempting authentication to:', authUrl);
       
+      // First, handle CORS preflight if needed
+      try {
+        await fetch(authUrl, {
+          method: 'OPTIONS',
+          headers: {
+            'Access-Control-Request-Method': 'POST',
+            'Access-Control-Request-Headers': 'Content-Type, Accept',
+          },
+        });
+      } catch (preflightError) {
+        console.log('Preflight request info:', preflightError);
+        // Continue with main request even if preflight fails
+      }
+
       const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
+          'User-Agent': 'QR-Management-System/1.0',
+          'Origin': window.location.origin,
         },
         body: new URLSearchParams({
           grant_type: 'client_credentials',
           client_id: this.config.clientId,
           client_secret: this.config.clientSecret,
-          audience: 'https://api.arduino.cc/iot',
+          audience: 'https://api2.arduino.cc/iot',
+          scope: 'iot:read iot:write'
         }),
+        mode: 'cors',
+        credentials: 'omit'
       });
 
       console.log('Authentication response status:', response.status);
@@ -40,7 +59,17 @@ export class ArduinoCloudService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Authentication error response:', errorText);
-        throw new Error(`Authentication failed: ${response.status} ${response.statusText} - ${errorText}`);
+        
+        // Handle specific error cases
+        if (response.status === 401) {
+          throw new Error('Invalid client credentials. Please check your Client ID and Client Secret.');
+        } else if (response.status === 403) {
+          throw new Error('Access forbidden. Please verify your Arduino Cloud account has the required permissions.');
+        } else if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please wait before trying again.');
+        } else {
+          throw new Error(`Authentication failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
       }
 
       const data = await response.json();
@@ -52,9 +81,9 @@ export class ArduinoCloudService {
     } catch (error) {
       console.error('Arduino Cloud authentication failed:', error);
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error: Unable to connect to Arduino Cloud. Please check your internet connection and proxy settings.');
+        throw new Error('CORS or Network error: Unable to connect to Arduino Cloud. This may be due to browser security restrictions or network issues.');
       }
-      return false;
+      throw error;
     }
   }
 
