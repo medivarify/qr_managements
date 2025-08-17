@@ -5,10 +5,11 @@ import { DataTable } from './components/DataTable';
 import { DataVisualization } from './components/DataVisualization';
 import { ArduinoIntegration } from './components/ArduinoIntegration';
 import { AuthModal } from './components/AuthModal';
+import { ProductQRGenerator } from './components/ProductQRGenerator';
 import { QRCodeData } from './types';
 import { QRDatabaseService, AuthService } from './lib/supabase';
 
-type TabType = 'scan' | 'data' | 'analytics' | 'arduino';
+type TabType = 'scan' | 'generate' | 'data' | 'analytics' | 'arduino';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scan');
@@ -245,6 +246,7 @@ function App() {
           <div className="flex space-x-8">
             {[
               { id: 'scan', label: 'Scan QR Codes', icon: QrCode },
+              { id: 'generate', label: 'Generate QR Codes', icon: QrCode },
               { id: 'data', label: 'Manage Data', icon: User },
               { id: 'analytics', label: 'Analytics', icon: BarChart3 },
               { id: 'arduino', label: 'Arduino Cloud', icon: Settings },
@@ -298,6 +300,10 @@ function App() {
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'generate' && (
+          <ProductQRGenerator />
         )}
 
         {activeTab === 'data' && (
