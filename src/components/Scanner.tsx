@@ -151,15 +151,15 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
 
   if (hasPermission === false) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-red-50 rounded-lg border border-red-200">
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h3 className="text-lg font-semibold text-red-900 mb-2">Camera Access Required</h3>
-        <p className="text-red-700 text-center mb-4">
+      <div className="flex flex-col items-center justify-center p-4 sm:p-8 bg-red-50 rounded-lg border border-red-200">
+        <AlertCircle className="w-8 h-8 sm:w-12 sm:h-12 text-red-500 mb-4" />
+        <h3 className="text-base sm:text-lg font-semibold text-red-900 mb-2 text-center">Camera Access Required</h3>
+        <p className="text-sm sm:text-base text-red-700 text-center mb-4">
           Please allow camera access to scan QR codes. Check your browser settings and reload the page.
         </p>
         <button
           onClick={checkCameraPermission}
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-base"
         >
           Check Permission
         </button>
@@ -172,7 +172,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       <div className="relative bg-black rounded-lg overflow-hidden">
         <video
           ref={videoRef}
-          className="w-full h-64 md:h-96 object-cover rounded-lg"
+          className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover rounded-lg"
           autoPlay
           playsInline
           muted
@@ -182,34 +182,34 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="relative">
             <Square 
-              className={`w-48 h-48 text-white transition-all duration-300 ${
+              className={`w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 text-white transition-all duration-300 ${
                 scanStatus === 'scanning' ? 'animate-pulse opacity-80' : 'opacity-60'
               }`} 
               strokeWidth={2}
             />
             
             {/* Corner indicators */}
-            <div className="absolute -top-2 -left-2 w-8 h-8 border-l-4 border-t-4 border-white"></div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 border-r-4 border-t-4 border-white"></div>
-            <div className="absolute -bottom-2 -left-2 w-8 h-8 border-l-4 border-b-4 border-white"></div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 border-r-4 border-b-4 border-white"></div>
+            <div className="absolute -top-1 -left-1 sm:-top-2 sm:-left-2 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 border-l-2 border-t-2 sm:border-l-4 sm:border-t-4 border-white"></div>
+            <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 border-r-2 border-t-2 sm:border-r-4 sm:border-t-4 border-white"></div>
+            <div className="absolute -bottom-1 -left-1 sm:-bottom-2 sm:-left-2 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 border-l-2 border-b-2 sm:border-l-4 sm:border-b-4 border-white"></div>
+            <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 border-r-2 border-b-2 sm:border-r-4 sm:border-b-4 border-white"></div>
             
             {/* Status indicator */}
-            <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
+            <div className="absolute -bottom-8 sm:-bottom-12 left-1/2 transform -translate-x-1/2">
               {scanStatus === 'scanning' && (
-                <div className="flex items-center space-x-2 text-white">
+                <div className="flex items-center space-x-2 text-white text-sm sm:text-base">
                   <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                   <span>Scanning...</span>
                 </div>
               )}
               {scanStatus === 'success' && (
-                <div className="flex items-center space-x-2 text-green-400">
+                <div className="flex items-center space-x-2 text-green-400 text-sm sm:text-base">
                   <CheckCircle className="w-4 h-4" />
                   <span>QR Code Detected!</span>
                 </div>
               )}
               {scanStatus === 'error' && (
-                <div className="flex items-center space-x-2 text-red-400">
+                <div className="flex items-center space-x-2 text-red-400 text-sm sm:text-base">
                   <AlertCircle className="w-4 h-4" />
                   <span>Scan Error</span>
                 </div>
@@ -220,11 +220,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap justify-center gap-3 mt-4">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mt-4">
         <button
           onClick={isScanning ? stopScanning : startScanning}
           disabled={hasPermission === null}
-          className={`flex items-center space-x-2 px-6 py-3 rounded-md font-medium transition-colors ${
+          className={`flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-md font-medium transition-colors text-sm sm:text-base ${
             isScanning
               ? 'bg-red-600 hover:bg-red-700 text-white'
               : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -238,7 +238,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
           <>
             <button
               onClick={takeSnapshot}
-              className="flex items-center space-x-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors"
+              className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors text-sm sm:text-base"
             >
               <Zap className="w-4 h-4" />
               <span>Snapshot</span>
@@ -247,7 +247,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
             {availableCameras.length > 1 && (
               <button
                 onClick={switchCamera}
-                className="flex items-center space-x-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors text-sm sm:text-base"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Switch Camera</span>
@@ -258,8 +258,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       </div>
 
       {/* Instructions */}
-      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div className="text-sm text-blue-800">
+      <div className="mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="text-xs sm:text-sm text-blue-800">
           <p className="text-center font-medium mb-2">How to scan QR codes:</p>
           <ul className="space-y-1 text-left">
             <li>• Position the QR code within the square frame</li>
@@ -272,7 +272,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       
       {/* Camera info */}
       {availableCameras.length > 0 && (
-        <div className="mt-2 text-xs text-gray-500 text-center">
+        <div className="mt-2 text-xs sm:text-sm text-gray-500 text-center">
           Using: {availableCameras.find(c => c.deviceId === selectedCamera)?.label || 'Default camera'}
           {availableCameras.length > 1 && ` (${availableCameras.length} cameras available)`}
         </div>

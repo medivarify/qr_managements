@@ -224,30 +224,33 @@ function App() {
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center space-x-3">
-              <QrCode className="w-8 h-8 text-blue-600" />
-              <h1 className="text-xl font-semibold text-gray-900">MediVerify - Medicine Tracking</h1>
+              <QrCode className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+              <h1 className="text-sm sm:text-xl font-semibold text-gray-900">
+                <span className="hidden sm:inline">MediVerify - Medicine Tracking</span>
+                <span className="sm:hidden">MediVerify</span>
+              </h1>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className="hidden sm:inline text-sm text-gray-600">
                 Welcome, {user.email}
               </span>
               <button
                 onClick={handleExport}
-                className="flex items-center space-x-2 px-3 py-1.5 text-green-600 hover:text-green-800 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 text-green-600 hover:text-green-800 transition-colors"
               >
                 <Download className="w-4 h-4" />
-                <span>Export</span>
+                <span className="hidden sm:inline">Export</span>
               </button>
               <button
                 onClick={handleSignOut}
-                className="flex items-center space-x-2 px-3 py-1.5 text-red-600 hover:text-red-800 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 text-red-600 hover:text-red-800 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Sign Out</span>
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           </div>
@@ -256,8 +259,8 @@ function App() {
 
       {/* Navigation */}
       <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex space-x-2 sm:space-x-4 lg:space-x-8 overflow-x-auto">
             {[
               { id: 'scan', label: 'Scan Medicine', icon: QrCode },
               { id: 'generate', label: 'Generate Medicine QR', icon: QrCode },
@@ -268,14 +271,17 @@ function App() {
               <button
                 key={id}
                 onClick={() => setActiveTab(id as TabType)}
-                className={`flex items-center space-x-2 px-3 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                <span>{label}</span>
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">
+                  {label.split(' ')[0]}
+                </span>
               </button>
             ))}
           </div>
@@ -283,20 +289,20 @@ function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {activeTab === 'scan' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Medicine QR Code Scanner</h2>
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Medicine QR Code Scanner</h2>
               <Scanner onScan={handleScan} onError={handleScanError} />
             </div>
             
             {qrCodes.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Scanned Medicines</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {qrCodes.slice(0, 6).map((qr) => (
-                    <div key={qr.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                    <div key={qr.id} className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                       <p className="text-sm font-medium text-gray-900 mb-2">
                         {qr.parsed_data.medicine_name || qr.data_type.toUpperCase()}
                       </p>
@@ -352,15 +358,15 @@ function App() {
 
       {/* QR Detail Modal */}
       {selectedQR && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Medicine Details</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Medicine Details</h3>
               <button
                 onClick={() => setSelectedQR(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1"
               >
-                ×
+                <span className="text-2xl">×</span>
               </button>
             </div>
             <div className="space-y-4">
@@ -397,7 +403,7 @@ function App() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Parsed Data</label>
-                <pre className="mt-1 text-sm text-gray-900 bg-gray-50 p-2 rounded overflow-x-auto">
+                <pre className="mt-1 text-xs sm:text-sm text-gray-900 bg-gray-50 p-2 rounded overflow-x-auto">
                   {JSON.stringify(selectedQR.parsed_data, null, 2)}
                 </pre>
               </div>

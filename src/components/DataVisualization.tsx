@@ -35,14 +35,14 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
     icon: React.ReactNode;
     color: string;
   }> = ({ title, value, subtitle, icon, color }) => (
-    <div className="bg-white p-6 rounded-lg shadow-md border-l-4" style={{ borderLeftColor: color }}>
+    <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow-md border-l-4" style={{ borderLeftColor: color }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-3xl font-bold" style={{ color }}>{value}</p>
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+          <p className="text-xs sm:text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-lg sm:text-2xl lg:text-3xl font-bold" style={{ color }}>{value}</p>
+          {subtitle && <p className="text-xs sm:text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
-        <div style={{ color }} className="opacity-80">
+        <div style={{ color }} className="opacity-80 hidden sm:block">
           {icon}
         </div>
       </div>
@@ -56,7 +56,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
     color: string;
   }> = ({ label, value, maxValue, color }) => (
     <div className="flex items-center space-x-3 py-2">
-      <div className="w-20 text-sm text-gray-600 truncate">{label}</div>
+      <div className="w-16 sm:w-20 text-xs sm:text-sm text-gray-600 truncate">{label}</div>
       <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500 ease-out"
@@ -66,7 +66,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
           }}
         ></div>
       </div>
-      <div className="w-12 text-sm font-medium text-gray-900 text-right">{value}</div>
+      <div className="w-8 sm:w-12 text-xs sm:text-sm font-medium text-gray-900 text-right">{value}</div>
     </div>
   );
 
@@ -87,7 +87,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <StatCard
           title="Total Scans"
           value={totalScans}
@@ -118,12 +118,12 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Data Type Distribution */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
           <div className="flex items-center space-x-2 mb-4">
             <BarChart3 className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Data Type Distribution</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Data Type Distribution</h3>
           </div>
           
           <div className="space-y-3">
@@ -137,16 +137,16 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
               />
             ))}
             {Object.keys(typeDistribution).length === 0 && (
-              <p className="text-gray-500 text-center py-8">No data to display</p>
+              <p className="text-sm text-gray-500 text-center py-4 sm:py-8">No data to display</p>
             )}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
           <div className="flex items-center space-x-2 mb-4">
             <TrendingUp className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Activity</h3>
           </div>
           
           <div className="space-y-4">
@@ -156,7 +156,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-700">Validation Status Breakdown</h4>
+              <h4 className="text-xs sm:text-sm font-medium text-gray-700">Validation Status Breakdown</h4>
               {Object.values(ValidationStatus).map(status => {
                 const count = data.filter(item => item.validation_status === status).length;
                 const percentage = totalScans > 0 ? ((count / totalScans) * 100).toFixed(1) : 0;
@@ -170,7 +170,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
                 };
 
                 return count > 0 ? (
-                  <div key={status} className="flex justify-between text-sm">
+                  <div key={status} className="flex justify-between text-xs sm:text-sm">
                     <span className="capitalize text-gray-600">{status}</span>
                     <span style={{ color: statusColors[status] }} className="font-medium">
                       {count} ({percentage}%)
@@ -185,30 +185,30 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({ data }) =>
 
       {/* Multidimensional Analysis */}
       {multidimensionalData.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
           <div className="flex items-center space-x-2 mb-4">
             <PieChart className="w-5 h-5 text-purple-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Multidimensional Data Analysis</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Multidimensional Data Analysis</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <p className="text-2xl font-bold text-purple-600">{multidimensionalData.length}</p>
-              <p className="text-sm text-purple-800">Multi-layer QR Codes</p>
+              <p className="text-xl sm:text-2xl font-bold text-purple-600">{multidimensionalData.length}</p>
+              <p className="text-xs sm:text-sm text-purple-800">Multi-layer QR Codes</p>
             </div>
             <div className="text-center p-4 bg-pink-50 rounded-lg">
-              <p className="text-2xl font-bold text-pink-600">
+              <p className="text-xl sm:text-2xl font-bold text-pink-600">
                 {multidimensionalData.reduce((max, item) => Math.max(max, item.dimensions), 0)}
               </p>
-              <p className="text-sm text-pink-800">Max Dimensions</p>
+              <p className="text-xs sm:text-sm text-pink-800">Max Dimensions</p>
             </div>
             <div className="text-center p-4 bg-indigo-50 rounded-lg">
-              <p className="text-2xl font-bold text-indigo-600">
+              <p className="text-xl sm:text-2xl font-bold text-indigo-600">
                 {multidimensionalData.length > 0 
                   ? (multidimensionalData.reduce((sum, item) => sum + item.dimensions, 0) / multidimensionalData.length).toFixed(1)
                   : 0}
               </p>
-              <p className="text-sm text-indigo-800">Avg Layers</p>
+              <p className="text-xs sm:text-sm text-indigo-800">Avg Layers</p>
             </div>
           </div>
         </div>

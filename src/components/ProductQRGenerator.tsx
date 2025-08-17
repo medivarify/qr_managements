@@ -136,32 +136,33 @@ export const ProductQRGenerator: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Package className="w-6 h-6 text-blue-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Medicine QR Code Generator</h2>
-              <p className="text-sm text-gray-600">Generate QR codes for medicine tracking and verification</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Medicine QR Code Generator</h2>
+              <p className="text-xs sm:text-sm text-gray-600">Generate QR codes for medicine tracking and verification</p>
             </div>
           </div>
           <button
             onClick={generateRandomMedicine}
-            className="flex items-center space-x-2 px-4 py-2 text-blue-600 hover:text-blue-800 transition-colors"
+            className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-blue-600 hover:text-blue-800 transition-colors text-sm sm:text-base"
           >
             <RefreshCw className="w-4 h-4" />
-            <span>Generate Sample</span>
+            <span className="hidden sm:inline">Generate Sample</span>
+            <span className="sm:hidden">Sample</span>
           </button>
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Medicine Information Form */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Medicine Information</h3>
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Medicine Information</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Medicine ID *
@@ -189,7 +190,7 @@ export const ProductQRGenerator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Batch Number *
@@ -225,7 +226,7 @@ export const ProductQRGenerator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Strength
@@ -253,7 +254,7 @@ export const ProductQRGenerator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   NDC Number
@@ -281,7 +282,7 @@ export const ProductQRGenerator: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Manufacturing Date
@@ -349,9 +350,9 @@ export const ProductQRGenerator: React.FC = () => {
 
           {/* QR Code Preview */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">QR Code Preview</h3>
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">QR Code Preview</h3>
             
-            <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="flex items-center justify-center p-4 sm:p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               {isFormValid ? (
                 <div className="text-center">
                   <QRCodeSVG
@@ -362,15 +363,15 @@ export const ProductQRGenerator: React.FC = () => {
                     includeMargin={true}
                     className="mx-auto mb-4"
                   />
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     QR Code for {medicineData.medicine_name}
                   </p>
                 </div>
               ) : (
-                <div className="text-center text-gray-500">
-                  <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Fill in required fields to generate QR code</p>
-                  <p className="text-sm mt-1">Medicine ID, Name, and Batch Number are required</p>
+                <div className="text-center text-gray-500 px-4">
+                  <Package className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm sm:text-base">Fill in required fields to generate QR code</p>
+                  <p className="text-xs sm:text-sm mt-1">Medicine ID, Name, and Batch Number are required</p>
                 </div>
               )}
             </div>
@@ -392,10 +393,10 @@ export const ProductQRGenerator: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                   <button
                     onClick={downloadQRCode}
-                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base"
                   >
                     <Download className="w-4 h-4" />
                     <span>Download QR Code</span>
@@ -403,7 +404,7 @@ export const ProductQRGenerator: React.FC = () => {
                   
                   <button
                     onClick={copyQRData}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm sm:text-base"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     <span>{copied ? 'Copied!' : 'Copy Data'}</span>
@@ -411,7 +412,7 @@ export const ProductQRGenerator: React.FC = () => {
                 </div>
 
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-800">
+                  <p className="text-xs sm:text-sm text-blue-800">
                     <strong>Next Steps:</strong><br/>
                     1. Download and print the QR code<br/>
                     2. Attach it to your medicine package<br/>

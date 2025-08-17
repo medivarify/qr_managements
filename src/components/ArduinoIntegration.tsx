@@ -146,81 +146,82 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Wifi className="w-6 h-6 text-blue-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Arduino Cloud Integration</h2>
-              <p className="text-sm text-gray-600">Sync QR code data with your Arduino devices</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Arduino Cloud Integration</h2>
+              <p className="text-xs sm:text-sm text-gray-600">Sync QR code data with your Arduino devices</p>
             </div>
           </div>
           <button
             onClick={() => setIsConfigOpen(true)}
-            className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm sm:text-base"
           >
             <Settings className="w-4 h-4" />
-            <span>Configure</span>
+            <span className="hidden sm:inline">Configure</span>
           </button>
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Connection Status */}
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center space-x-3">
             {getStatusIcon()}
             <div>
-              <p className="font-medium text-gray-900">Connection Status</p>
-              <p className="text-sm text-gray-600">{connectionMessage || 'Not connected'}</p>
+              <p className="text-sm sm:text-base font-medium text-gray-900">Connection Status</p>
+              <p className="text-xs sm:text-sm text-gray-600">{connectionMessage || 'Not connected'}</p>
             </div>
           </div>
           {service && (
             <button
               onClick={() => testConnection()}
               disabled={connectionStatus === 'connecting'}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              Test Connection
+              <span className="hidden sm:inline">Test Connection</span>
+              <span className="sm:hidden">Test</span>
             </button>
           )}
         </div>
 
         {/* Sync Status */}
         {connectionStatus === 'connected' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{qrData.length}</p>
-              <p className="text-sm text-blue-800">Total QR Codes</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{qrData.length}</p>
+              <p className="text-xs sm:text-sm text-blue-800">Total QR Codes</p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-xl sm:text-2xl font-bold text-green-600">
                 {qrData.filter(item => item.arduino_sync_status === 'synced').length}
               </p>
-              <p className="text-sm text-green-800">Synced</p>
+              <p className="text-xs sm:text-sm text-green-800">Synced</p>
             </div>
             <div className="p-4 bg-orange-50 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">{unsyncedCount}</p>
-              <p className="text-sm text-orange-800">Pending Sync</p>
+              <p className="text-xl sm:text-2xl font-bold text-orange-600">{unsyncedCount}</p>
+              <p className="text-xs sm:text-sm text-orange-800">Pending Sync</p>
             </div>
           </div>
         )}
 
         {/* Sync Actions */}
         {connectionStatus === 'connected' && unsyncedCount > 0 && (
-          <div className="flex items-center justify-between p-4 border border-orange-200 bg-orange-50 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-orange-200 bg-orange-50 rounded-lg space-y-3 sm:space-y-0">
             <div>
-              <p className="font-medium text-orange-900">
+              <p className="text-sm sm:text-base font-medium text-orange-900">
                 {unsyncedCount} QR code{unsyncedCount !== 1 ? 's' : ''} pending sync
               </p>
-              <p className="text-sm text-orange-700">
+              <p className="text-xs sm:text-sm text-orange-700">
                 Sync your QR codes to make them available on your Arduino devices
               </p>
             </div>
             <button
               onClick={syncAllQRCodes}
               disabled={syncProgress !== null}
-              className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
+              className="px-4 sm:px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors text-sm sm:text-base whitespace-nowrap"
             >
               {syncProgress ? `Syncing... ${syncProgress.current}/${syncProgress.total}` : 'Sync All'}
             </button>
@@ -230,8 +231,8 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
         {/* Thing Status */}
         {thingStatus && (
           <div className="p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3">Arduino Thing Status</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-3">Arduino Thing Status</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
                 <span className="text-gray-600">Name:</span>
                 <span className="ml-2 font-medium">{thingStatus.name || 'Unknown'}</span>
@@ -263,15 +264,15 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
 
       {/* Configuration Modal */}
       {isConfigOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
               Arduino Cloud Configuration
             </h3>
             
             <div className="space-y-4">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-sm text-blue-800">
+                <p className="text-xs sm:text-sm text-blue-800">
                   <strong>Setup Instructions:</strong><br/>
                   1. Go to <a href="https://cloud.arduino.cc/" target="_blank" rel="noopener noreferrer" className="underline">Arduino Cloud</a><br/>
                   2. Navigate to API Keys section<br/>
@@ -288,7 +289,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   type="text"
                   value={config.clientId}
                   onChange={(e) => setConfig(prev => ({ ...prev, clientId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   placeholder="e.g., AbCdEfGhIjKlMnOpQrStUvWxYz123456"
                 />
               </div>
@@ -301,7 +302,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   type="password"
                   value={config.clientSecret}
                   onChange={(e) => setConfig(prev => ({ ...prev, clientSecret: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   placeholder="Your secret key (keep this secure)"
                 />
               </div>
@@ -314,7 +315,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   type="text"
                   value={config.thingId}
                   onChange={(e) => setConfig(prev => ({ ...prev, thingId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   placeholder="e.g., 12345678-1234-1234-1234-123456789abc"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -330,23 +331,23 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
                   type="text"
                   value={config.propertyName}
                   onChange={(e) => setConfig(prev => ({ ...prev, propertyName: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   placeholder="qr_data"
                 />
               </div>
             </div>
             
-            <div className="flex space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
               <button
                 onClick={saveConfiguration}
                 disabled={!config.clientId || !config.clientSecret}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
               >
                 Save & Connect
               </button>
               <button
                 onClick={() => setIsConfigOpen(false)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm sm:text-base"
               >
                 Cancel
               </button>

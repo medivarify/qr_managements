@@ -86,11 +86,11 @@ export const DataTable: React.FC<DataTableProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-md">
       {/* Header with search and filters */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-          <h2 className="text-xl font-semibold text-gray-900">Scanned QR Codes</h2>
+      <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="flex flex-col space-y-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Scanned QR Codes</h2>
           
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -99,7 +99,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                 placeholder="Search QR codes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
               />
             </div>
 
@@ -107,7 +107,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as QRDataType | 'all')}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             >
               <option value="all">All Types</option>
               {Object.values(QRDataType).map(type => (
@@ -119,7 +119,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as ValidationStatus | 'all')}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             >
               <option value="all">All Statuses</option>
               {Object.values(ValidationStatus).map(status => (
@@ -130,7 +130,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             {/* Export button */}
             <button
               onClick={onExport}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm sm:text-base"
             >
               <Download className="w-4 h-4" />
               <span>Export</span>
@@ -141,25 +141,25 @@ export const DataTable: React.FC<DataTableProps> = ({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[640px]">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Type & Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Data Preview
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                 Dimensions
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Scan Time
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Arduino Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -167,68 +167,73 @@ export const DataTable: React.FC<DataTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-3 sm:px-6 py-8 sm:py-12 text-center">
                   <div className="text-gray-500">
-                    <Filter className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No QR codes found</p>
-                    <p className="text-sm">Try adjusting your search or filters</p>
+                    <Filter className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-base sm:text-lg font-medium">No QR codes found</p>
+                    <p className="text-xs sm:text-sm">Try adjusting your search or filters</p>
                   </div>
                 </td>
               </tr>
             ) : (
               filteredData.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <div className="space-y-2">
                       {getTypeBadge(item.data_type)}
                       {getStatusBadge(item.validation_status)}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="max-w-[150px] sm:max-w-xs">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                         {typeof item.parsed_data === 'object' 
-                          ? JSON.stringify(item.parsed_data).substring(0, 50) + '...'
-                          : item.raw_data.substring(0, 50) + '...'}
+                          ? JSON.stringify(item.parsed_data).substring(0, 30) + '...'
+                          : item.raw_data.substring(0, 30) + '...'}
                       </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500 hidden sm:table-cell">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {item.dimensions}D
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(item.scan_timestamp).toLocaleString()}
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-500">
+                    <div className="sm:hidden">
+                      {new Date(item.scan_timestamp).toLocaleDateString()}
+                    </div>
+                    <div className="hidden sm:block">
+                      {new Date(item.scan_timestamp).toLocaleString()}
+                    </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
                     <div className="flex items-center space-x-2">
                       {getSyncStatusBadge(item.arduino_sync_status)}
                       {item.arduino_sync_status !== 'synced' && (
                         <button
                           onClick={() => onSync(item)}
-                          className="text-blue-600 hover:text-blue-800 text-sm underline"
+                          className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm underline"
                         >
                           Sync
                         </button>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
                       <button
                         onClick={() => onView(item)}
-                        className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                        className="p-1 sm:p-2 text-blue-600 hover:text-blue-800 transition-colors"
                         title="View details"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                       <button
                         onClick={() => onDelete(item.id)}
-                        className="p-1 text-red-600 hover:text-red-800 transition-colors"
+                        className="p-1 sm:p-2 text-red-600 hover:text-red-800 transition-colors"
                         title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </td>
@@ -241,8 +246,8 @@ export const DataTable: React.FC<DataTableProps> = ({
 
       {/* Pagination info */}
       {filteredData.length > 0 && (
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <p className="text-sm text-gray-700">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50">
+          <p className="text-xs sm:text-sm text-gray-700">
             Showing {filteredData.length} of {data.length} QR codes
           </p>
         </div>
