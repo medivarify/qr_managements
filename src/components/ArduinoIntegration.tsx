@@ -15,7 +15,7 @@ export const ArduinoIntegration: React.FC<ArduinoIntegrationProps> = ({
   const [config, setConfig] = useState<ArduinoCloudConfig>({
     clientId: '',
     clientSecret: '',
-    baseUrl: 'https://api.arduino.cc/iot',
+    baseUrl: '/api/arduino',
     thingId: '',
     propertyName: 'qr_data'
   });
