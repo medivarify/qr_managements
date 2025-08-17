@@ -18,10 +18,14 @@ export class ArduinoCloudService {
    */
   async authenticate(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/oauth/token`, {
+      const authUrl = `${this.config.baseUrl}/oauth/token`;
+      console.log('Attempting authentication to:', authUrl);
+      
+      const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
         },
         body: new URLSearchParams({
           grant_type: 'client_credentials',
@@ -31,17 +35,25 @@ export class ArduinoCloudService {
         }),
       });
 
+      console.log('Authentication response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`Authentication failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Authentication error response:', errorText);
+        throw new Error(`Authentication failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Authentication successful, token received');
       this.accessToken = data.access_token;
       this.tokenExpiry = new Date(Date.now() + data.expires_in * 1000);
 
       return true;
     } catch (error) {
       console.error('Arduino Cloud authentication failed:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to Arduino Cloud. Please check your internet connection and proxy settings.');
+      }
       return false;
     }
   }
