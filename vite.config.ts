@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/arduino': {
-        target: 'https://api2.arduino.cc',
+        target: 'https://api.arduino.cc',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/arduino/, ''),
-        secure: true,
+        secure: false,
         headers: {
-          'Origin': 'https://api2.arduino.cc',
+          'Origin': 'https://api.arduino.cc',
           'User-Agent': 'QR-Management-System/1.0'
         },
         configure: (proxy, options) => {
