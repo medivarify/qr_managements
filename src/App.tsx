@@ -62,8 +62,12 @@ function App() {
   const handleScan = async (data: QRCodeData) => {
     if (!user) return;
 
+    console.log('Handling scan data:', data);
+    
     // Save to database
     const savedQR = await QRDatabaseService.insertQRCode(data);
+    console.log('Saved QR result:', savedQR);
+    
     if (savedQR) {
       setQrCodes(prev => [savedQR, ...prev]);
       
@@ -74,6 +78,10 @@ function App() {
           successful_scans: qrCodes.filter(qr => qr.validation_status === 'valid').length + (data.validation_status === 'valid' ? 1 : 0)
         });
       }
+    } else {
+      console.error('Failed to save QR code to database');
+      // Still add to local state for demo purposes
+      setQrCodes(prev => [{ ...data, id: crypto.randomUUID() }, ...prev]);
     }
   };
 

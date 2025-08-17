@@ -81,14 +81,19 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
     }
     
     setLastScannedData(rawData);
+    console.log('Raw QR data scanned:', rawData);
     
     try {
       const parsedQR = QRCodeParser.parseQRCode(rawData);
+      console.log('Parsed QR data:', parsedQR);
+      
       const qrData: QRCodeData = {
         id: crypto.randomUUID(),
         arduino_sync_status: 'not_synced' as const,
         ...parsedQR
       } as QRCodeData;
+      
+      console.log('Final QR data object:', qrData);
 
       setScanStatus('success');
       onScan(qrData);
@@ -99,6 +104,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, onError }) => {
       }, 2000);
 
     } catch (error) {
+      console.error('Error processing QR code:', error);
       handleScanError('Failed to process QR code data');
     }
   };
