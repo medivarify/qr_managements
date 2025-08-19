@@ -1039,10 +1039,10 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
                 onChange={(e) => setSelectedDistrict(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
               >
-                <option value="">Random Bangladesh District</option>
+                <option value="all">All Districts</option>
                 {manufacturerStats.enhancedDistricts.map(district => (
                   <option key={district.district} value={district.district}>
-                    {district.district} - {district.state}
+                    {district.district}, {district.state}
                   </option>
                 ))}
               </select>
