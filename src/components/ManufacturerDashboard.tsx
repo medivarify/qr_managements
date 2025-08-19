@@ -25,13 +25,13 @@ import {
   Zap,
   Award,
   TrendingDown,
+  QrCode,
   Plus,
   Printer,
-  QrCode as QrCodeIcon,
   FileText,
-  Copy,
+  Trash2,
   Check,
-  Trash2
+  Copy
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRCodeData, DistrictData, ManufacturerStats } from '../types';
@@ -77,12 +77,14 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
   const [batchSize, setBatchSize] = useState(10);
   const [selectedDistrictForGeneration, setSelectedDistrictForGeneration] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<AlertData[]>([]);
 
   // Auto-refresh functionality
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
-    setAlerts(buildAlerts(processedDistricts));
+        setLastRefresh(new Date());
+        setAlerts(generateSystemAlerts(enhancedDistricts));
       }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
@@ -113,7 +115,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
   ];
 
   // Generate alerts based on data
-  const buildAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
+  const generateAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
     const alerts: AlertData[] = [];
     
     districts.forEach(district => {
@@ -401,12 +403,16 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     setGeneratedQRs([]);
   };
 
+  const generateSystemAlerts = (districts: DistrictData[]): AlertData[] => {
+    return [];
+  };
+
   // Enhanced manufacturer statistics
   const manufacturerStats = useMemo((): ManufacturerStats & {
     enhancedDistricts: EnhancedDistrictData[];
     alerts: AlertData[];
     regionalStats: Record<string, any>;
-    performanceMetrics: Record<string, number>;
+    performanceMetrics: any;
   } => {
     const now = new Date();
     const timeFilterDays = timeFilter === '7d' ? 7 : timeFilter === '30d' ? 30 : timeFilter === '90d' ? 90 : 0;
@@ -721,7 +727,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
       {showQuickGenerate && (
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center space-x-3 mb-4">
-            <QrCodeIcon className="w-5 h-5 text-blue-600" />
+            <QrCode className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-900">Quick QR Code Generation</h3>
           </div>
           
@@ -769,7 +775,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
                   onClick={generateSingleQR}
                   className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
                 >
-                  <QrCodeIcon className="w-4 h-4" />
+                  <QrCode className="w-4 h-4" />
                   <span>Generate Single</span>
                 </button>
                 
@@ -819,7 +825,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
               
               {generatedQRs.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <QrCodeIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <QrCode className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No QR codes generated yet</p>
                 </div>
               ) : (
