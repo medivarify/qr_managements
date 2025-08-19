@@ -75,7 +75,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
-        setLastRefresh(new Date());
+    setAlerts(generateSystemAlerts(enhancedDistricts));
       }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
@@ -459,7 +459,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     enhancedDistricts: EnhancedDistrictData[];
     alerts: AlertData[];
     regionalStats: Record<string, any>;
-    performanceMetrics: Record<string, number>;
+  const generateSystemAlerts = (districts: DistrictData[]): Alert[] => {
   } => {
     const now = new Date();
     const timeFilterDays = timeFilter === '7d' ? 7 : timeFilter === '30d' ? 30 : timeFilter === '90d' ? 90 : 0;
