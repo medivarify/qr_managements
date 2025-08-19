@@ -25,12 +25,6 @@ import {
   Zap,
   Award,
   TrendingDown
-  Plus,
-  Printer,
-  QrCode,
-  FileText,
-  Copy,
-  Check
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRCodeData, DistrictData, ManufacturerStats } from '../types';
@@ -74,7 +68,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     timestamp: string;
   }>>([]);
   const [batchSize, setBatchSize] = useState(10);
-  const [selectedDistrict, setSelectedDistrictForGeneration] = useState('');
+  const [selectedDistrictForGeneration, setSelectedDistrictForGeneration] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
 
   // Auto-refresh functionality
@@ -110,6 +104,295 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     { district: 'Vadodara', state: 'Gujarat', region: 'West', population: 1666703 },
     { district: 'Ghaziabad', state: 'Uttar Pradesh', region: 'North', population: 1636068 }
   ];
+
+  // Generate alerts based on data
+  const generateAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
+    const alerts: AlertData[] = [];
+    
+    districts.forEach(district => {
+      // Expiry alerts
+      if (district.expiredMedicines > 5) {
+        alerts.push({
+          id: `exp-${district.district}`,
+          type: 'expiry',
+          district: district.district,
+          message: `${district.expiredMedicines} medicines expired in ${district.district}`,
+          severity: district.expiredMedicines > 20 ? 'critical' : district.expiredMedicines > 10 ? 'high' : 'medium',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Quality alerts
+      if (district.qualityScore < 70) {
+        alerts.push({
+          id: `qual-${district.district}`,
+          type: 'quality',
+          district: district.district,
+          message: `Quality score below threshold in ${district.district} (${district.qualityScore}%)`,
+          severity: district.qualityScore < 50 ? 'critical' : 'high',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Compliance alerts
+      if (district.complianceRate < 80) {
+        alerts.push({
+          id: `comp-${district.district}`,
+          type: 'compliance',
+          district: district.district,
+          message: `Compliance rate low in ${district.district} (${district.complianceRate}%)`,
+          severity: district.complianceRate < 60 ? 'high' : 'medium',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Delivery alerts
+      if (district.averageDeliveryTime > 7) {
+        alerts.push({
+          id: `del-${district.district}`,
+          type: 'delivery',
+          district: district.district,
+          message: `Delivery delays in ${district.district} (${district.averageDeliveryTime} days avg)`,
+          severity: district.averageDeliveryTime > 14 ? 'high' : 'medium',
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+
+    return alerts.sort((a, b) => {
+      const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+      return severityOrder[b.severity] - severityOrder[a.severity];
+    });
+  };
+
+  // Generate random medicine data
+  const generateRandomMedicine = (destinationDistrict?: string) => {
+    const dosageForms = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream', 'Drops'];
+    const manufacturers = ['Pfizer Inc', 'Johnson & Johnson', 'Novartis AG', 'Roche Holding', 'Merck & Co'];
+    const medicines = ['Amoxicillin', 'Ibuprofen', 'Metformin', 'Lisinopril', 'Atorvastatin', 'Paracetamol', 'Aspirin', 'Omeprazole'];
+    const strengths = ['250mg', '500mg', '10mg', '20mg', '100mg', '5mg', '1mg'];
+    
+    const randomDosageForm = dosageForms[Math.floor(Math.random() * dosageForms.length)];
+    const randomManufacturer = manufacturers[Math.floor(Math.random() * manufacturers.length)];
+    const randomMedicine = medicines[Math.floor(Math.random() * medicines.length)];
+    const randomStrength = strengths[Math.floor(Math.random() * strengths.length)];
+    const medicineId = `MED-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    const batchNumber = `BATCH-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const lotNumber = `LOT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const ndcNumber = `${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}-${Math.floor(Math.random() * 99).toString().padStart(2, '0')}`;
+    
+    const today = new Date();
+    const manufacturingDate = today.toISOString().split('T')[0];
+    const expiryDate = new Date(today.getTime() + (730 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // 2 years
+
+    // Select destination district
+    const district = destinationDistrict || indianDistricts[Math.floor(Math.random() * indianDistricts.length)].district;
+
+    return {
+      medicine_id: medicineId,
+      medicine_name: randomMedicine,
+      batch_number: batchNumber,
+      manufacturing_date: manufacturingDate,
+      expiry_date: expiryDate,
+      manufacturer: randomManufacturer,
+      dosage_form: randomDosageForm,
+      strength: randomStrength,
+      active_ingredient: randomMedicine,
+      ndc_number: ndcNumber,
+      lot_number: lotNumber,
+      storage_conditions: 'Store at room temperature (20-25°C)',
+      prescription_required: Math.random() > 0.5,
+      destination_district: district,
+      tracking_id: `${medicineId}-${Date.now()}`,
+      verification_code: Math.random().toString(36).substr(2, 8).toUpperCase()
+    };
+  };
+
+  // Generate single QR code
+  const generateSingleQR = () => {
+    const medicineData = generateRandomMedicine(selectedDistrictForGeneration || undefined);
+    const qrData = {
+      type: 'medicine_tracking',
+      timestamp: new Date().toISOString(),
+      data: medicineData
+    };
+    
+    const newQR = {
+      id: crypto.randomUUID(),
+      qrData: JSON.stringify(qrData),
+      medicineData,
+      timestamp: new Date().toISOString()
+    };
+    
+    setGeneratedQRs(prev => [newQR, ...prev]);
+  };
+
+  // Generate batch QR codes
+  const generateBatchQRs = () => {
+    const newQRs = [];
+    for (let i = 0; i < batchSize; i++) {
+      const medicineData = generateRandomMedicine(selectedDistrictForGeneration || undefined);
+      const qrData = {
+        type: 'medicine_tracking',
+        timestamp: new Date().toISOString(),
+        data: medicineData
+      };
+      
+      newQRs.push({
+        id: crypto.randomUUID(),
+        qrData: JSON.stringify(qrData),
+        medicineData,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    setGeneratedQRs(prev => [...newQRs, ...prev]);
+  };
+
+  // Print single QR code
+  const printSingleQR = (qr: any) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Medicine QR Code - ${qr.medicineData.medicine_name}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+              .qr-container { border: 2px solid #000; padding: 20px; margin: 20px auto; width: 300px; }
+              .medicine-info { margin-bottom: 15px; text-align: left; }
+              .medicine-info h3 { margin: 0 0 10px 0; text-align: center; }
+              .info-row { margin: 5px 0; }
+              .qr-code { text-align: center; margin: 15px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="qr-container">
+              <div class="medicine-info">
+                <h3>${qr.medicineData.medicine_name}</h3>
+                <div class="info-row"><strong>ID:</strong> ${qr.medicineData.medicine_id}</div>
+                <div class="info-row"><strong>Batch:</strong> ${qr.medicineData.batch_number}</div>
+                <div class="info-row"><strong>Manufacturer:</strong> ${qr.medicineData.manufacturer}</div>
+                <div class="info-row"><strong>Expiry:</strong> ${qr.medicineData.expiry_date}</div>
+                <div class="info-row"><strong>Destination:</strong> ${qr.medicineData.destination_district}</div>
+              </div>
+              <div class="qr-code">
+                <div id="qr-${qr.id}"></div>
+              </div>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+            <script>
+              QRCode.toCanvas(document.getElementById('qr-${qr.id}'), '${qr.qrData}', { width: 200 }, function (error) {
+                if (error) console.error(error);
+                setTimeout(() => window.print(), 500);
+              });
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
+  // Print all QR codes
+  const printAllQRs = () => {
+    if (generatedQRs.length === 0) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const qrElements = generatedQRs.map(qr => `
+        <div class="qr-item">
+          <div class="medicine-info">
+            <h4>${qr.medicineData.medicine_name}</h4>
+            <div><strong>ID:</strong> ${qr.medicineData.medicine_id}</div>
+            <div><strong>Batch:</strong> ${qr.medicineData.batch_number}</div>
+            <div><strong>Destination:</strong> ${qr.medicineData.destination_district}</div>
+          </div>
+          <div class="qr-code" id="qr-${qr.id}"></div>
+        </div>
+      `).join('');
+      
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Medicine QR Codes Batch Print</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 10px; }
+              .qr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+              .qr-item { border: 1px solid #000; padding: 15px; text-align: center; }
+              .medicine-info { margin-bottom: 10px; font-size: 12px; }
+              .medicine-info h4 { margin: 0 0 5px 0; font-size: 14px; }
+              .qr-code { margin: 10px 0; }
+              @media print { .qr-grid { grid-template-columns: repeat(2, 1fr); } }
+            </style>
+          </head>
+          <body>
+            <h2 style="text-align: center;">Medicine QR Codes - Batch Print</h2>
+            <div class="qr-grid">
+              ${qrElements}
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+            <script>
+              const qrs = ${JSON.stringify(generatedQRs)};
+              let completed = 0;
+              qrs.forEach(qr => {
+                QRCode.toCanvas(document.getElementById('qr-' + qr.id), qr.qrData, { width: 120 }, function (error) {
+                  if (error) console.error(error);
+                  completed++;
+                  if (completed === qrs.length) {
+                    setTimeout(() => window.print(), 500);
+                  }
+                });
+              });
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
+  // Copy QR data to clipboard
+  const copyQRData = async (qrData: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(qrData);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy QR data:', error);
+    }
+  };
+
+  // Export generated QRs
+  const exportGeneratedQRs = () => {
+    if (generatedQRs.length === 0) return;
+    
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      total_qrs: generatedQRs.length,
+      qr_codes: generatedQRs.map(qr => ({
+        id: qr.id,
+        medicine_data: qr.medicineData,
+        qr_data: qr.qrData,
+        generated_at: qr.timestamp
+      }))
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `generated-qr-codes-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Clear all generated QRs
+  const clearAllQRs = () => {
+    setGeneratedQRs([]);
+  };
 
   // Generate alerts based on data
   const generateAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
@@ -420,6 +703,13 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
             
             <div className="flex items-center space-x-2">
               <button
+                onClick={() => setShowQuickGenerate(!showQuickGenerate)}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Quick Generate</span>
+              </button>
+              <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm transition-colors ${
                   autoRefresh 
@@ -479,6 +769,164 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
           </div>
         </div>
       </div>
+
+      {/* Quick QR Generation Panel */}
+      {showQuickGenerate && (
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <QrCode className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Quick QR Code Generation</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Generation Controls */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Destination District
+                </label>
+                <select
+                  value={selectedDistrictForGeneration}
+                  onChange={(e) => setSelectedDistrictForGeneration(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Random District</option>
+                  {indianDistricts.map(district => (
+                    <option key={district.district} value={district.district}>
+                      {district.district}, {district.state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Batch Size
+                </label>
+                <select
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value={1}>1 QR Code</option>
+                  <option value={5}>5 QR Codes</option>
+                  <option value={10}>10 QR Codes</option>
+                  <option value={25}>25 QR Codes</option>
+                  <option value={50}>50 QR Codes</option>
+                  <option value={100}>100 QR Codes</option>
+                </select>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <button
+                  onClick={generateSingleQR}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Generate Single</span>
+                </button>
+                
+                <button
+                  onClick={generateBatchQRs}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Generate Batch ({batchSize})</span>
+                </button>
+              </div>
+              
+              {generatedQRs.length > 0 && (
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t">
+                  <button
+                    onClick={printAllQRs}
+                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Print All ({generatedQRs.length})</span>
+                  </button>
+                  
+                  <button
+                    onClick={exportGeneratedQRs}
+                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Export Data</span>
+                  </button>
+                  
+                  <button
+                    onClick={clearAllQRs}
+                    className="flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Clear All</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Generated QRs Display */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">
+                Generated QR Codes ({generatedQRs.length})
+              </h4>
+              
+              {generatedQRs.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <QrCode className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No QR codes generated yet</p>
+                </div>
+              ) : (
+                <div className="max-h-96 overflow-y-auto space-y-3">
+                  {generatedQRs.slice(0, 10).map((qr) => (
+                    <div key={qr.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                      <div className="flex-shrink-0">
+                        <QRCodeSVG
+                          value={qr.qrData}
+                          size={60}
+                          level="M"
+                          includeMargin={true}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {qr.medicineData.medicine_name}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          ID: {qr.medicineData.medicine_id}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          Destination: {qr.medicineData.destination_district}
+                        </p>
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        <button
+                          onClick={() => printSingleQR(qr)}
+                          className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Print QR Code"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => copyQRData(qr.qrData, qr.id)}
+                          className="p-1 text-gray-600 hover:text-gray-800 transition-colors"
+                          title="Copy QR Data"
+                        >
+                          {copied === qr.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {generatedQRs.length > 10 && (
+                    <div className="text-center py-2 text-sm text-gray-500">
+                      ... and {generatedQRs.length - 10} more QR codes
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Enhanced Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
