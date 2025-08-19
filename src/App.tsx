@@ -8,10 +8,11 @@ import { AuthModal } from './components/AuthModal';
 import { ProductQRGenerator } from './components/ProductQRGenerator';
 import { ManufacturerDashboard } from './components/ManufacturerDashboard';
 import { DistributorDashboard } from './components/DistributorDashboard';
+import { AgentPortal } from './components/AgentPortal';
 import { QRCodeData } from './types';
 import { QRDatabaseService, AuthService } from './lib/supabase';
 
-type TabType = 'scan' | 'generate' | 'manufacturer' | 'distributor' | 'data' | 'analytics' | 'arduino';
+type TabType = 'scan' | 'generate' | 'manufacturer' | 'distributor' | 'agent' | 'data' | 'analytics' | 'arduino';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scan');
@@ -268,6 +269,7 @@ function App() {
               { id: 'generate', label: 'Generate Medicine QR', icon: QrCode },
               { id: 'manufacturer', label: 'Manufacturer Dashboard', icon: User },
               { id: 'distributor', label: 'Distributor Dashboard', icon: User },
+              { id: 'agent', label: 'Agent Portal', icon: User },
               { id: 'data', label: 'Medicine Database', icon: User },
               { id: 'analytics', label: 'Medicine Analytics', icon: BarChart3 },
               { id: 'arduino', label: 'IoT Monitoring', icon: Settings },
@@ -284,7 +286,7 @@ function App() {
                 <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{label}</span>
                 <span className="sm:hidden">
-                  {id === 'manufacturer' ? 'Mfg' : id === 'distributor' ? 'Dist' : label.split(' ')[0]}
+                  {id === 'manufacturer' ? 'Mfg' : id === 'distributor' ? 'Dist' : id === 'agent' ? 'Agent' : label.split(' ')[0]}
                 </span>
               </button>
             ))}
@@ -344,6 +346,10 @@ function App() {
 
         {activeTab === 'distributor' && (
           <DistributorDashboard qrData={qrCodes} />
+        )}
+
+        {activeTab === 'agent' && (
+          <AgentPortal qrData={qrCodes} />
         )}
 
         {activeTab === 'data' && (
