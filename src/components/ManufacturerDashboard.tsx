@@ -1214,3 +1214,5 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     </div>
   );
 };
+
+export { ManufacturerDashboard }
