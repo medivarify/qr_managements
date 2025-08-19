@@ -25,7 +25,14 @@ import {
   Zap,
   Award,
   TrendingDown
+  Plus,
+  Printer,
+  QrCode,
+  FileText,
+  Copy,
+  Check
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { QRCodeData, DistrictData, ManufacturerStats } from '../types';
 
 interface ManufacturerDashboardProps {
@@ -59,6 +66,16 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
   const [selectedMetric, setSelectedMetric] = useState<'volume' | 'quality' | 'compliance' | 'delivery'>('volume');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [showQuickGenerate, setShowQuickGenerate] = useState(false);
+  const [generatedQRs, setGeneratedQRs] = useState<Array<{
+    id: string;
+    qrData: string;
+    medicineData: any;
+    timestamp: string;
+  }>>([]);
+  const [batchSize, setBatchSize] = useState(10);
+  const [selectedDistrict, setSelectedDistrictForGeneration] = useState('');
+  const [copied, setCopied] = useState<string | null>(null);
 
   // Auto-refresh functionality
   useEffect(() => {
