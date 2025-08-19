@@ -84,3 +84,20 @@ export interface APIResponse<T> {
   error?: string;
   timestamp: string;
 }
+
+export interface DistrictData {
+  district: string;
+  state: string;
+  totalMedicines: number;
+  expiredMedicines: number;
+  recentShipments: number;
+  lastShipmentDate?: string;
+}
+
+export interface ManufacturerStats {
+  totalProduced: number;
+  totalDistributed: number;
+  activeDistricts: number;
+  expiryAlerts: number;
+  topDistricts: DistrictData[];
+}

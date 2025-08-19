@@ -6,10 +6,11 @@ import { DataVisualization } from './components/DataVisualization';
 import { ArduinoIntegration } from './components/ArduinoIntegration';
 import { AuthModal } from './components/AuthModal';
 import { ProductQRGenerator } from './components/ProductQRGenerator';
+import { ManufacturerDashboard } from './components/ManufacturerDashboard';
 import { QRCodeData } from './types';
 import { QRDatabaseService, AuthService } from './lib/supabase';
 
-type TabType = 'scan' | 'generate' | 'data' | 'analytics' | 'arduino';
+type TabType = 'scan' | 'generate' | 'manufacturer' | 'data' | 'analytics' | 'arduino';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('scan');
@@ -264,6 +265,7 @@ function App() {
             {[
               { id: 'scan', label: 'Scan Medicine', icon: QrCode },
               { id: 'generate', label: 'Generate Medicine QR', icon: QrCode },
+              { id: 'manufacturer', label: 'Manufacturer Dashboard', icon: User },
               { id: 'data', label: 'Medicine Database', icon: User },
               { id: 'analytics', label: 'Medicine Analytics', icon: BarChart3 },
               { id: 'arduino', label: 'IoT Monitoring', icon: Settings },
@@ -280,7 +282,7 @@ function App() {
                 <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{label}</span>
                 <span className="sm:hidden">
-                  {label.split(' ')[0]}
+                  {id === 'manufacturer' ? 'Mfg' : label.split(' ')[0]}
                 </span>
               </button>
             ))}
@@ -332,6 +334,10 @@ function App() {
           <div>
             <ProductQRGenerator />
           </div>
+        )}
+
+        {activeTab === 'manufacturer' && (
+          <ManufacturerDashboard qrData={qrCodes} />
         )}
 
         {activeTab === 'data' && (
