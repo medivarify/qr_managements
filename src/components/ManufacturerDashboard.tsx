@@ -24,7 +24,14 @@ import {
   Globe,
   Zap,
   Award,
-  TrendingDown
+  TrendingDown,
+  Plus,
+  Printer,
+  QrCode as QrCodeIcon,
+  FileText,
+  Copy,
+  Check,
+  Trash2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRCodeData, DistrictData, ManufacturerStats } from '../types';
@@ -75,7 +82,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
-    setAlerts(generateSystemAlerts(enhancedDistricts));
+    setAlerts(buildAlerts(processedDistricts));
       }, 30000); // Refresh every 30 seconds
       return () => clearInterval(interval);
     }
@@ -106,7 +113,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
   ];
 
   // Generate alerts based on data
-  const generateAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
+  const buildAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
     const alerts: AlertData[] = [];
     
     districts.forEach(district => {
@@ -394,72 +401,12 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     setGeneratedQRs([]);
   };
 
-  // Generate alerts based on data
-  const generateAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
-    const alerts: AlertData[] = [];
-    
-    districts.forEach(district => {
-      // Expiry alerts
-      if (district.expiredMedicines > 5) {
-        alerts.push({
-          id: `exp-${district.district}`,
-          type: 'expiry',
-          district: district.district,
-          message: `${district.expiredMedicines} medicines expired in ${district.district}`,
-          severity: district.expiredMedicines > 20 ? 'critical' : district.expiredMedicines > 10 ? 'high' : 'medium',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Quality alerts
-      if (district.qualityScore < 70) {
-        alerts.push({
-          id: `qual-${district.district}`,
-          type: 'quality',
-          district: district.district,
-          message: `Quality score below threshold in ${district.district} (${district.qualityScore}%)`,
-          severity: district.qualityScore < 50 ? 'critical' : 'high',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Compliance alerts
-      if (district.complianceRate < 80) {
-        alerts.push({
-          id: `comp-${district.district}`,
-          type: 'compliance',
-          district: district.district,
-          message: `Compliance rate low in ${district.district} (${district.complianceRate}%)`,
-          severity: district.complianceRate < 60 ? 'high' : 'medium',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Delivery alerts
-      if (district.averageDeliveryTime > 7) {
-        alerts.push({
-          id: `del-${district.district}`,
-          type: 'delivery',
-          district: district.district,
-          message: `Delivery delays in ${district.district} (${district.averageDeliveryTime} days avg)`,
-          severity: district.averageDeliveryTime > 14 ? 'high' : 'medium',
-          timestamp: new Date().toISOString()
-        });
-      }
-    });
-
-    return alerts.sort((a, b) => {
-      const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-      return severityOrder[b.severity] - severityOrder[a.severity];
-    });
-  };
-
   // Enhanced manufacturer statistics
   const manufacturerStats = useMemo((): ManufacturerStats & {
     enhancedDistricts: EnhancedDistrictData[];
     alerts: AlertData[];
     regionalStats: Record<string, any>;
-  const generateSystemAlerts = (districts: DistrictData[]): Alert[] => {
+    performanceMetrics: Record<string, number>;
   } => {
     const now = new Date();
     const timeFilterDays = timeFilter === '7d' ? 7 : timeFilter === '30d' ? 30 : timeFilter === '90d' ? 90 : 0;
@@ -774,7 +721,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
       {showQuickGenerate && (
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center space-x-3 mb-4">
-            <QrCode className="w-5 h-5 text-blue-600" />
+            <QrCodeIcon className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-900">Quick QR Code Generation</h3>
           </div>
           
@@ -822,7 +769,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
                   onClick={generateSingleQR}
                   className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
                 >
-                  <QrCode className="w-4 h-4" />
+                  <QrCodeIcon className="w-4 h-4" />
                   <span>Generate Single</span>
                 </button>
                 
@@ -872,7 +819,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
               
               {generatedQRs.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <QrCode className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <QrCodeIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No QR codes generated yet</p>
                 </div>
               ) : (
