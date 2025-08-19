@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Factory, 
   MapPin, 
@@ -10,7 +10,21 @@ import {
   BarChart3,
   Filter,
   Search,
-  Download
+  Download,
+  Clock,
+  Shield,
+  Users,
+  Target,
+  Activity,
+  Bell,
+  CheckCircle,
+  XCircle,
+  Eye,
+  RefreshCw,
+  Globe,
+  Zap,
+  Award,
+  TrendingDown
 } from 'lucide-react';
 import { QRCodeData, DistrictData, ManufacturerStats } from '../types';
 
@@ -18,37 +32,135 @@ interface ManufacturerDashboardProps {
   qrData: QRCodeData[];
 }
 
+interface EnhancedDistrictData extends DistrictData {
+  averageDeliveryTime: number;
+  qualityScore: number;
+  complianceRate: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  trend: 'up' | 'down' | 'stable';
+  lastActivity: string;
+  medicineTypes: Record<string, number>;
+}
+
+interface AlertData {
+  id: string;
+  type: 'expiry' | 'quality' | 'compliance' | 'delivery';
+  district: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: string;
+}
+
 export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qrData }) => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [timeFilter, setTimeFilter] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [viewMode, setViewMode] = useState<'cards' | 'table' | 'map'>('cards');
+  const [selectedMetric, setSelectedMetric] = useState<'volume' | 'quality' | 'compliance' | 'delivery'>('volume');
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Sample Indian districts data - in real app, this would come from your database
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        setLastRefresh(new Date());
+      }, 30000); // Refresh every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh]);
+
+  // Enhanced Indian districts with regional data
   const indianDistricts = [
-    { district: 'Mumbai', state: 'Maharashtra' },
-    { district: 'Delhi', state: 'Delhi' },
-    { district: 'Bangalore', state: 'Karnataka' },
-    { district: 'Chennai', state: 'Tamil Nadu' },
-    { district: 'Kolkata', state: 'West Bengal' },
-    { district: 'Hyderabad', state: 'Telangana' },
-    { district: 'Pune', state: 'Maharashtra' },
-    { district: 'Ahmedabad', state: 'Gujarat' },
-    { district: 'Jaipur', state: 'Rajasthan' },
-    { district: 'Lucknow', state: 'Uttar Pradesh' },
-    { district: 'Kanpur', state: 'Uttar Pradesh' },
-    { district: 'Nagpur', state: 'Maharashtra' },
-    { district: 'Indore', state: 'Madhya Pradesh' },
-    { district: 'Thane', state: 'Maharashtra' },
-    { district: 'Bhopal', state: 'Madhya Pradesh' },
-    { district: 'Visakhapatnam', state: 'Andhra Pradesh' },
-    { district: 'Pimpri-Chinchwad', state: 'Maharashtra' },
-    { district: 'Patna', state: 'Bihar' },
-    { district: 'Vadodara', state: 'Gujarat' },
-    { district: 'Ghaziabad', state: 'Uttar Pradesh' }
+    { district: 'Mumbai', state: 'Maharashtra', region: 'West', population: 12442373 },
+    { district: 'Delhi', state: 'Delhi', region: 'North', population: 11034555 },
+    { district: 'Bangalore', state: 'Karnataka', region: 'South', population: 8443675 },
+    { district: 'Chennai', state: 'Tamil Nadu', region: 'South', population: 7088000 },
+    { district: 'Kolkata', state: 'West Bengal', region: 'East', population: 4496694 },
+    { district: 'Hyderabad', state: 'Telangana', region: 'South', population: 6809970 },
+    { district: 'Pune', state: 'Maharashtra', region: 'West', population: 3124458 },
+    { district: 'Ahmedabad', state: 'Gujarat', region: 'West', population: 5633927 },
+    { district: 'Jaipur', state: 'Rajasthan', region: 'North', population: 3046163 },
+    { district: 'Lucknow', state: 'Uttar Pradesh', region: 'North', population: 2817105 },
+    { district: 'Kanpur', state: 'Uttar Pradesh', region: 'North', population: 2767031 },
+    { district: 'Nagpur', state: 'Maharashtra', region: 'West', population: 2405421 },
+    { district: 'Indore', state: 'Madhya Pradesh', region: 'Central', population: 1964086 },
+    { district: 'Thane', state: 'Maharashtra', region: 'West', population: 1841488 },
+    { district: 'Bhopal', state: 'Madhya Pradesh', region: 'Central', population: 1798218 },
+    { district: 'Visakhapatnam', state: 'Andhra Pradesh', region: 'South', population: 1730320 },
+    { district: 'Pimpri-Chinchwad', state: 'Maharashtra', region: 'West', population: 1729359 },
+    { district: 'Patna', state: 'Bihar', region: 'East', population: 1684222 },
+    { district: 'Vadodara', state: 'Gujarat', region: 'West', population: 1666703 },
+    { district: 'Ghaziabad', state: 'Uttar Pradesh', region: 'North', population: 1636068 }
   ];
 
-  // Calculate manufacturer statistics
-  const manufacturerStats = useMemo((): ManufacturerStats => {
+  // Generate alerts based on data
+  const generateAlerts = (districts: EnhancedDistrictData[]): AlertData[] => {
+    const alerts: AlertData[] = [];
+    
+    districts.forEach(district => {
+      // Expiry alerts
+      if (district.expiredMedicines > 5) {
+        alerts.push({
+          id: `exp-${district.district}`,
+          type: 'expiry',
+          district: district.district,
+          message: `${district.expiredMedicines} medicines expired in ${district.district}`,
+          severity: district.expiredMedicines > 20 ? 'critical' : district.expiredMedicines > 10 ? 'high' : 'medium',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Quality alerts
+      if (district.qualityScore < 70) {
+        alerts.push({
+          id: `qual-${district.district}`,
+          type: 'quality',
+          district: district.district,
+          message: `Quality score below threshold in ${district.district} (${district.qualityScore}%)`,
+          severity: district.qualityScore < 50 ? 'critical' : 'high',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Compliance alerts
+      if (district.complianceRate < 80) {
+        alerts.push({
+          id: `comp-${district.district}`,
+          type: 'compliance',
+          district: district.district,
+          message: `Compliance rate low in ${district.district} (${district.complianceRate}%)`,
+          severity: district.complianceRate < 60 ? 'high' : 'medium',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Delivery alerts
+      if (district.averageDeliveryTime > 7) {
+        alerts.push({
+          id: `del-${district.district}`,
+          type: 'delivery',
+          district: district.district,
+          message: `Delivery delays in ${district.district} (${district.averageDeliveryTime} days avg)`,
+          severity: district.averageDeliveryTime > 14 ? 'high' : 'medium',
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+
+    return alerts.sort((a, b) => {
+      const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+      return severityOrder[b.severity] - severityOrder[a.severity];
+    });
+  };
+
+  // Enhanced manufacturer statistics
+  const manufacturerStats = useMemo((): ManufacturerStats & {
+    enhancedDistricts: EnhancedDistrictData[];
+    alerts: AlertData[];
+    regionalStats: Record<string, any>;
+    performanceMetrics: Record<string, number>;
+  } => {
     const now = new Date();
     const timeFilterDays = timeFilter === '7d' ? 7 : timeFilter === '30d' ? 30 : timeFilter === '90d' ? 90 : 0;
     
@@ -60,11 +172,10 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
         })
       : qrData;
 
-    // Group by destination district (simulated from medicine data)
-    const districtStats = new Map<string, DistrictData>();
+    // Enhanced district statistics
+    const districtStats = new Map<string, EnhancedDistrictData>();
     
     filteredData.forEach(qr => {
-      // Simulate destination district assignment based on medicine ID or batch
       const districtIndex = Math.abs(qr.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % indianDistricts.length;
       const district = indianDistricts[districtIndex];
       
@@ -75,7 +186,14 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
         totalMedicines: 0,
         expiredMedicines: 0,
         recentShipments: 0,
-        lastShipmentDate: undefined
+        lastShipmentDate: undefined,
+        averageDeliveryTime: Math.floor(Math.random() * 10) + 2, // 2-12 days
+        qualityScore: Math.floor(Math.random() * 30) + 70, // 70-100%
+        complianceRate: Math.floor(Math.random() * 25) + 75, // 75-100%
+        riskLevel: 'low' as const,
+        trend: 'stable' as const,
+        lastActivity: new Date().toISOString(),
+        medicineTypes: {}
       };
 
       existing.totalMedicines += 1;
@@ -83,7 +201,11 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
         existing.expiredMedicines += 1;
       }
       
-      // Consider recent scans as shipments
+      // Track medicine types
+      const medicineType = qr.parsed_data.medicine_name || qr.data_type;
+      existing.medicineTypes[medicineType] = (existing.medicineTypes[medicineType] || 0) + 1;
+      
+      // Recent shipments (last 7 days)
       const qrDate = new Date(qr.scan_timestamp);
       if ((now.getTime() - qrDate.getTime()) / (1000 * 60 * 60 * 24) <= 7) {
         existing.recentShipments += 1;
@@ -91,25 +213,87 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
       
       if (!existing.lastShipmentDate || qr.scan_timestamp > existing.lastShipmentDate) {
         existing.lastShipmentDate = qr.scan_timestamp;
+        existing.lastActivity = qr.scan_timestamp;
       }
+
+      // Calculate risk level
+      const expiryRate = existing.totalMedicines > 0 ? (existing.expiredMedicines / existing.totalMedicines) * 100 : 0;
+      if (expiryRate > 20 || existing.qualityScore < 60 || existing.complianceRate < 70) {
+        existing.riskLevel = 'high';
+      } else if (expiryRate > 10 || existing.qualityScore < 80 || existing.complianceRate < 85) {
+        existing.riskLevel = 'medium';
+      } else {
+        existing.riskLevel = 'low';
+      }
+
+      // Calculate trend (simplified)
+      existing.trend = existing.recentShipments > existing.totalMedicines * 0.3 ? 'up' : 
+                      existing.recentShipments < existing.totalMedicines * 0.1 ? 'down' : 'stable';
 
       districtStats.set(key, existing);
     });
 
-    const topDistricts = Array.from(districtStats.values())
-      .sort((a, b) => b.totalMedicines - a.totalMedicines)
-      .slice(0, 10);
+    const enhancedDistricts = Array.from(districtStats.values())
+      .sort((a, b) => b.totalMedicines - a.totalMedicines);
+
+    // Regional statistics
+    const regionalStats = enhancedDistricts.reduce((acc, district) => {
+      const region = indianDistricts.find(d => d.district === district.district)?.region || 'Unknown';
+      if (!acc[region]) {
+        acc[region] = {
+          districts: 0,
+          totalMedicines: 0,
+          expiredMedicines: 0,
+          averageQuality: 0,
+          averageCompliance: 0
+        };
+      }
+      acc[region].districts += 1;
+      acc[region].totalMedicines += district.totalMedicines;
+      acc[region].expiredMedicines += district.expiredMedicines;
+      acc[region].averageQuality += district.qualityScore;
+      acc[region].averageCompliance += district.complianceRate;
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Calculate averages for regional stats
+    Object.keys(regionalStats).forEach(region => {
+      const stats = regionalStats[region];
+      stats.averageQuality = Math.round(stats.averageQuality / stats.districts);
+      stats.averageCompliance = Math.round(stats.averageCompliance / stats.districts);
+    });
+
+    // Performance metrics
+    const performanceMetrics = {
+      overallQuality: enhancedDistricts.length > 0 
+        ? Math.round(enhancedDistricts.reduce((sum, d) => sum + d.qualityScore, 0) / enhancedDistricts.length)
+        : 0,
+      overallCompliance: enhancedDistricts.length > 0
+        ? Math.round(enhancedDistricts.reduce((sum, d) => sum + d.complianceRate, 0) / enhancedDistricts.length)
+        : 0,
+      averageDeliveryTime: enhancedDistricts.length > 0
+        ? Math.round(enhancedDistricts.reduce((sum, d) => sum + d.averageDeliveryTime, 0) / enhancedDistricts.length)
+        : 0,
+      highRiskDistricts: enhancedDistricts.filter(d => d.riskLevel === 'high').length,
+      growingDistricts: enhancedDistricts.filter(d => d.trend === 'up').length
+    };
+
+    const alerts = generateAlerts(enhancedDistricts);
 
     return {
       totalProduced: filteredData.length,
       totalDistributed: filteredData.filter(qr => qr.arduino_sync_status === 'synced').length,
       activeDistricts: districtStats.size,
       expiryAlerts: filteredData.filter(qr => qr.parsed_data.is_expired).length,
-      topDistricts
+      topDistricts: enhancedDistricts.slice(0, 10),
+      enhancedDistricts,
+      alerts,
+      regionalStats,
+      performanceMetrics
     };
-  }, [qrData, timeFilter]);
+  }, [qrData, timeFilter, lastRefresh]);
 
-  const filteredDistricts = manufacturerStats.topDistricts.filter(district => {
+  const filteredDistricts = manufacturerStats.enhancedDistricts.filter(district => {
     const matchesSearch = district.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          district.state.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = selectedDistrict === 'all' || district.district === selectedDistrict;
@@ -123,8 +307,15 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     icon: React.ReactNode;
     color: string;
     trend?: string;
-  }> = ({ title, value, subtitle, icon, color, trend }) => (
-    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4" style={{ borderLeftColor: color }}>
+    onClick?: () => void;
+  }> = ({ title, value, subtitle, icon, color, trend, onClick }) => (
+    <div 
+      className={`bg-white p-4 sm:p-6 rounded-lg shadow-md border-l-4 transition-all duration-200 ${
+        onClick ? 'cursor-pointer hover:shadow-lg hover:scale-105' : ''
+      }`}
+      style={{ borderLeftColor: color }}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-xs sm:text-sm font-medium text-gray-600">{title}</p>
@@ -144,19 +335,52 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
     </div>
   );
 
-  const exportDistrictData = () => {
+  const AlertCard: React.FC<{ alert: AlertData }> = ({ alert }) => {
+    const severityColors = {
+      critical: 'bg-red-100 border-red-500 text-red-800',
+      high: 'bg-orange-100 border-orange-500 text-orange-800',
+      medium: 'bg-yellow-100 border-yellow-500 text-yellow-800',
+      low: 'bg-blue-100 border-blue-500 text-blue-800'
+    };
+
+    const severityIcons = {
+      critical: <XCircle className="w-4 h-4" />,
+      high: <AlertTriangle className="w-4 h-4" />,
+      medium: <Clock className="w-4 h-4" />,
+      low: <Bell className="w-4 h-4" />
+    };
+
+    return (
+      <div className={`p-3 rounded-lg border-l-4 ${severityColors[alert.severity]}`}>
+        <div className="flex items-start space-x-2">
+          {severityIcons[alert.severity]}
+          <div className="flex-1">
+            <p className="text-sm font-medium">{alert.message}</p>
+            <p className="text-xs opacity-75 mt-1">
+              {new Date(alert.timestamp).toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const exportAdvancedReport = () => {
     const exportData = {
       timestamp: new Date().toISOString(),
       timeFilter,
-      stats: manufacturerStats,
-      districts: filteredDistricts
+      summary: manufacturerStats,
+      districts: filteredDistricts,
+      alerts: manufacturerStats.alerts,
+      regionalAnalysis: manufacturerStats.regionalStats,
+      performanceMetrics: manufacturerStats.performanceMetrics
     };
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `manufacturer-district-report-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `advanced-manufacturer-report-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -165,17 +389,36 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
-          <div className="flex items-center space-x-3">
-            <Factory className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Manufacturer Dashboard</h1>
-              <p className="text-sm sm:text-base text-gray-600">Medicine distribution across districts</p>
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-3">
+              <Factory className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Advanced Manufacturer Dashboard</h1>
+                <p className="text-sm sm:text-base text-gray-600">Real-time medicine distribution analytics & monitoring</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm transition-colors ${
+                  autoRefresh 
+                    ? 'bg-green-100 text-green-800 border border-green-300' 
+                    : 'bg-gray-100 text-gray-600 border border-gray-300'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Auto Refresh</span>
+              </button>
+              <span className="text-xs text-gray-500">
+                Last: {lastRefresh.toLocaleTimeString()}
+              </span>
             </div>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             <select
               value={timeFilter}
@@ -188,8 +431,29 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
               <option value="all">All time</option>
             </select>
             
+            <select
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value as any)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="cards">Card View</option>
+              <option value="table">Table View</option>
+              <option value="map">Map View</option>
+            </select>
+
+            <select
+              value={selectedMetric}
+              onChange={(e) => setSelectedMetric(e.target.value as any)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="volume">Volume</option>
+              <option value="quality">Quality</option>
+              <option value="compliance">Compliance</option>
+              <option value="delivery">Delivery Time</option>
+            </select>
+            
             <button
-              onClick={exportDistrictData}
+              onClick={exportAdvancedReport}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
             >
               <Download className="w-4 h-4" />
@@ -199,8 +463,8 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      {/* Enhanced Key Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
         <StatCard
           title="Total Produced"
           value={manufacturerStats.totalProduced}
@@ -226,25 +490,121 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
           trend="+3 new districts"
         />
         <StatCard
-          title="Expiry Alerts"
-          value={manufacturerStats.expiryAlerts}
-          subtitle="Medicines expired"
-          icon={<AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8" />}
+          title="Quality Score"
+          value={`${manufacturerStats.performanceMetrics.overallQuality}%`}
+          subtitle="Average quality"
+          icon={<Award className="w-6 h-6 sm:w-8 sm:h-8" />}
+          color="#0891b2"
+        />
+        <StatCard
+          title="Compliance Rate"
+          value={`${manufacturerStats.performanceMetrics.overallCompliance}%`}
+          subtitle="Regulatory compliance"
+          icon={<Shield className="w-6 h-6 sm:w-8 sm:h-8" />}
+          color="#7c2d12"
+        />
+        <StatCard
+          title="Avg Delivery"
+          value={`${manufacturerStats.performanceMetrics.averageDeliveryTime}d`}
+          subtitle="Days to deliver"
+          icon={<Clock className="w-6 h-6 sm:w-8 sm:h-8" />}
           color="#dc2626"
         />
       </div>
 
-      {/* District Distribution */}
+      {/* Alerts Section */}
+      {manufacturerStats.alerts.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Bell className="w-5 h-5 text-red-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Active Alerts ({manufacturerStats.alerts.length})
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {manufacturerStats.alerts.slice(0, 6).map(alert => (
+              <AlertCard key={alert.id} alert={alert} />
+            ))}
+          </div>
+          {manufacturerStats.alerts.length > 6 && (
+            <div className="mt-4 text-center">
+              <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                View All {manufacturerStats.alerts.length} Alerts
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Regional Overview */}
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <Globe className="w-5 h-5 text-purple-600" />
+          <h3 className="text-lg font-semibold text-gray-900">Regional Overview</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {Object.entries(manufacturerStats.regionalStats).map(([region, stats]) => (
+            <div key={region} className="p-4 border border-gray-200 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-2">{region} India</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Districts:</span>
+                  <span className="font-medium">{stats.districts}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Medicines:</span>
+                  <span className="font-medium">{stats.totalMedicines}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Quality:</span>
+                  <span className={`font-medium ${stats.averageQuality >= 80 ? 'text-green-600' : 'text-orange-600'}`}>
+                    {stats.averageQuality}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Compliance:</span>
+                  <span className={`font-medium ${stats.averageCompliance >= 85 ? 'text-green-600' : 'text-orange-600'}`}>
+                    {stats.averageCompliance}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Enhanced District Distribution */}
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-3">
-              <MapPin className="w-5 h-5 text-blue-600" />
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">District-wise Distribution</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <MapPin className="w-5 h-5 text-blue-600" />
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                  District-wise Distribution & Analytics
+                </h2>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">View:</span>
+                <div className="flex border border-gray-300 rounded-md">
+                  {['cards', 'table', 'map'].map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode as any)}
+                      className={`px-3 py-1 text-sm capitalize ${
+                        viewMode === mode 
+                          ? 'bg-blue-600 text-white' 
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-              {/* Search */}
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
@@ -256,14 +616,13 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
                 />
               </div>
 
-              {/* District filter */}
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="all">All Districts</option>
-                {manufacturerStats.topDistricts.map(district => (
+                {manufacturerStats.enhancedDistricts.map(district => (
                   <option key={district.district} value={district.district}>
                     {district.district}, {district.state}
                   </option>
@@ -273,7 +632,7 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
           </div>
         </div>
 
-        {/* District Cards */}
+        {/* Enhanced District Cards */}
         <div className="p-4 sm:p-6">
           {filteredDistricts.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
@@ -284,11 +643,22 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredDistricts.map((district) => (
-                <div key={district.district} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div key={district.district} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-200">
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900">{district.district}</h3>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">{district.district}</h3>
+                        {district.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
+                        {district.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-500" />}
+                      </div>
                       <p className="text-sm text-gray-600">{district.state}</p>
+                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                        district.riskLevel === 'high' ? 'bg-red-100 text-red-800' :
+                        district.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {district.riskLevel.toUpperCase()} RISK
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="text-xl sm:text-2xl font-bold text-blue-600">{district.totalMedicines}</p>
@@ -296,30 +666,53 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="text-center p-2 bg-green-50 rounded">
-                      <p className="text-lg font-semibold text-green-600">{district.recentShipments}</p>
-                      <p className="text-xs text-green-800">Recent Shipments</p>
+                      <p className="text-sm font-semibold text-green-600">{district.recentShipments}</p>
+                      <p className="text-xs text-green-800">Recent</p>
                     </div>
                     <div className="text-center p-2 bg-red-50 rounded">
-                      <p className="text-lg font-semibold text-red-600">{district.expiredMedicines}</p>
+                      <p className="text-sm font-semibold text-red-600">{district.expiredMedicines}</p>
                       <p className="text-xs text-red-800">Expired</p>
                     </div>
+                    <div className="text-center p-2 bg-blue-50 rounded">
+                      <p className="text-sm font-semibold text-blue-600">{district.qualityScore}%</p>
+                      <p className="text-xs text-blue-800">Quality</p>
+                    </div>
+                    <div className="text-center p-2 bg-purple-50 rounded">
+                      <p className="text-sm font-semibold text-purple-600">{district.complianceRate}%</p>
+                      <p className="text-xs text-purple-800">Compliance</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-gray-500">
+                    <div className="flex items-center justify-between">
+                      <span>Avg Delivery:</span>
+                      <span className={`font-medium ${district.averageDeliveryTime <= 5 ? 'text-green-600' : 'text-orange-600'}`}>
+                        {district.averageDeliveryTime} days
+                      </span>
+                    </div>
+                    {district.lastShipmentDate && (
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>Last: {new Date(district.lastShipmentDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
                   
-                  {district.lastShipmentDate && (
-                    <div className="flex items-center space-x-2 text-xs text-gray-500">
-                      <Calendar className="w-3 h-3" />
-                      <span>Last shipment: {new Date(district.lastShipmentDate).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  
-                  {district.expiredMedicines > 0 && (
+                  {district.expiredMedicines > 5 && (
                     <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded flex items-center space-x-1">
                       <AlertTriangle className="w-3 h-3" />
-                      <span>Expiry Alert</span>
+                      <span>High Expiry Alert</span>
                     </div>
                   )}
+
+                  <div className="mt-3 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Medicine Types:</span>
+                      <span className="text-xs font-medium">{Object.keys(district.medicineTypes).length}</span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -327,17 +720,48 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
         </div>
       </div>
 
-      {/* Distribution Chart */}
+      {/* Enhanced Distribution Chart */}
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <BarChart3 className="w-5 h-5 text-purple-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Top Districts by Volume</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <BarChart3 className="w-5 h-5 text-purple-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Top Districts by {selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}
+            </h3>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-500">Live Data</span>
+          </div>
         </div>
         
         <div className="space-y-3">
-          {manufacturerStats.topDistricts.slice(0, 8).map((district, index) => {
-            const maxValue = Math.max(...manufacturerStats.topDistricts.map(d => d.totalMedicines));
-            const percentage = maxValue > 0 ? (district.totalMedicines / maxValue) * 100 : 0;
+          {manufacturerStats.enhancedDistricts.slice(0, 10).map((district, index) => {
+            let value, maxValue, color;
+            
+            switch (selectedMetric) {
+              case 'quality':
+                value = district.qualityScore;
+                maxValue = 100;
+                color = value >= 80 ? '#10b981' : value >= 60 ? '#f59e0b' : '#ef4444';
+                break;
+              case 'compliance':
+                value = district.complianceRate;
+                maxValue = 100;
+                color = value >= 85 ? '#10b981' : value >= 70 ? '#f59e0b' : '#ef4444';
+                break;
+              case 'delivery':
+                value = 15 - district.averageDeliveryTime; // Invert for better visualization
+                maxValue = 15;
+                color = district.averageDeliveryTime <= 5 ? '#10b981' : district.averageDeliveryTime <= 10 ? '#f59e0b' : '#ef4444';
+                break;
+              default:
+                value = district.totalMedicines;
+                maxValue = Math.max(...manufacturerStats.enhancedDistricts.map(d => d.totalMedicines));
+                color = '#3b82f6';
+            }
+            
+            const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
             
             return (
               <div key={district.district} className="flex items-center space-x-3">
@@ -347,13 +771,23 @@ export const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ qr
                 </div>
                 <div className="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500"
-                    style={{ width: `${percentage}%` }}
+                    className="h-full transition-all duration-500"
+                    style={{ 
+                      backgroundColor: color, 
+                      width: `${percentage}%` 
+                    }}
                   ></div>
                 </div>
-                <div className="w-12 text-sm font-medium text-gray-900 text-right">
-                  {district.totalMedicines}
+                <div className="w-16 text-sm font-medium text-gray-900 text-right">
+                  {selectedMetric === 'delivery' ? `${district.averageDeliveryTime}d` : 
+                   selectedMetric === 'volume' ? value :
+                   `${value}%`}
                 </div>
+                <div className={`w-2 h-2 rounded-full ${
+                  district.riskLevel === 'high' ? 'bg-red-500' :
+                  district.riskLevel === 'medium' ? 'bg-yellow-500' :
+                  'bg-green-500'
+                }`}></div>
               </div>
             );
           })}
